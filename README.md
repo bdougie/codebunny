@@ -4,9 +4,15 @@ A GitHub Action for AI-powered code reviews using Continue Agent.
 
 ## Overview
 
-CodeBunny is a GitHub Action that provides intelligent, context-aware code reviews on your pull requests using Continue's AI capabilities. It analyzes your codebase patterns, applies custom rules, and provides actionable feedback.
+CodeBunny is a GitHub Action that provides intelligent, context-aware code reviews on your pull requests using [Continue's AI capabilities](https://continue.dev). It analyzes your codebase patterns, applies custom rules, and provides actionable feedback.
 
-> **Note**: CodeBunny was inspired by existing code review applications and battle-tested in the [contributor.info](https://github.com/bdougie/contributor.info) repository. It's now generalized for use in any JavaScript/TypeScript project.
+### Why CodeBunny?
+
+**Own Your Review Data** - Unlike SaaS code review services, CodeBunny runs entirely in your GitHub Actions environment. Your code never leaves your repository, and all review data stays under your control.
+
+**Powered by Continue** - Built on [Continue](https://www.continue.dev/), the leading open-source AI code assistant. Use Continue's hosted service or [self-host your own instance](https://docs.continue.dev/quickstart) for complete control.
+
+**Battle-Tested** - Inspired by existing code review tools and refined in the [contributor.info](https://github.com/bdougie/contributor.info) repository. Now generalized for any JavaScript/TypeScript project.
 
 ## Features
 
@@ -15,7 +21,8 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 ✅ **Custom Rules** - Define project-specific review guidelines  
 ✅ **Interactive Commands** - Trigger focused reviews with `@continue-agent` mentions  
 ✅ **Sticky Progress Comments** - Single updating comment instead of spam  
-✅ **Security-First** - GitHub App authentication for secure access  
+✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
+✅ **Self-Hostable** - Use Continue's cloud or [self-host](https://docs.continue.dev/quickstart) for full control  
 
 ## Installation
 
@@ -23,7 +30,7 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 
 - A GitHub repository with pull requests
 - Node.js 20+ (automatically available in GitHub Actions)
-- A [Continue Hub](https://hub.continue.dev) account
+- A [Continue account](https://hub.continue.dev) (or [self-hosted Continue](https://docs.continue.dev/quickstart))
 - A Continue Assistant configured for code reviews
 
 ### Step 1: Create a GitHub App
@@ -44,7 +51,7 @@ Add these to your repository settings (Settings → Secrets and variables → Ac
 - `CONTINUE_CONFIG` - Your Continue assistant path (format: `username/assistant-name`)
 
 #### Secrets (Required)
-- `CONTINUE_API_KEY` - Your Continue API key from [hub.continue.dev](https://hub.continue.dev)
+- `CONTINUE_API_KEY` - Your Continue API key from [hub.continue.dev](https://hub.continue.dev) (or your self-hosted instance)
 
 #### Optional: GitHub App (Recommended for enhanced permissions)
 
@@ -344,15 +351,33 @@ act pull_request -e .github/events/pull_request.json
 
 MIT License - See LICENSE file for details
 
+## Why Choose CodeBunny?
+
+### Data Privacy & Control
+
+**Your Code Stays in Your Repo** - CodeBunny runs as a GitHub Action in your own infrastructure. Unlike SaaS code review services, your code is never sent to third-party servers for analysis.
+
+**Own Your Review History** - All review data is stored as GitHub comments and optional metrics in your repository. You control the data, not a vendor.
+
+**Self-Hosting Option** - Use [Continue's cloud service](https://hub.continue.dev) or [self-host Continue](https://docs.continue.dev/quickstart) for complete control over your AI infrastructure.
+
+### Transparent & Open Source
+
+**MIT Licensed** - Fork it, modify it, extend it. The code is yours.
+
+**No Vendor Lock-In** - Switch between Continue's cloud and self-hosted at any time. Your review configuration stays the same.
+
+**Community-Driven** - Built on [Continue](https://www.continue.dev/), the open-source AI code assistant trusted by developers worldwide.
+
 ## Inspiration & History
 
-CodeBunny was inspired by existing code review automation tools and the need for more context-aware AI reviews. It was initially developed and tested in the [contributor.info](https://github.com/bdougie/contributor.info) repository, where it helped maintain code quality across numerous contributions.
+CodeBunny was inspired by existing code review automation tools and the need for more context-aware, privacy-respecting AI reviews. It was initially developed and tested in the [contributor.info](https://github.com/bdougie/contributor.info) repository, where it helped maintain code quality across numerous contributions.
 
-The action has been generalized to work with any JavaScript/TypeScript project, making it easy to add AI-powered code reviews to your workflow.
+The action has been generalized to work with any JavaScript/TypeScript project, making it easy to add AI-powered code reviews to your workflow while maintaining control over your data.
 
 ## Acknowledgments
 
-- Built with [Continue](https://continue.dev)
+- Built with [Continue](https://www.continue.dev/) - The open-source AI code assistant
 - Tested and refined in [contributor.info](https://github.com/bdougie/contributor.info)
 - Inspired by code review tools like Danger, CodeRabbit, and GitHub Copilot
 - Thanks to the open source community
