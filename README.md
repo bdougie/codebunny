@@ -4,7 +4,9 @@ A GitHub Action for AI-powered code reviews using Continue Agent.
 
 ## Overview
 
-CodeBunny is a powerful GitHub Action that provides intelligent, context-aware code reviews on your pull requests using Continue's AI capabilities. It understands your codebase patterns, applies custom rules, and provides actionable feedback.
+CodeBunny is a GitHub Action that provides intelligent, context-aware code reviews on your pull requests using Continue's AI capabilities. It analyzes your codebase patterns, applies custom rules, and provides actionable feedback.
+
+> **Note**: CodeBunny was inspired by existing code review applications and battle-tested in the [contributor.info](https://github.com/bdougie/contributor.info) repository. It's now generalized for use in any JavaScript/TypeScript project.
 
 ## Features
 
@@ -15,42 +17,50 @@ CodeBunny is a powerful GitHub Action that provides intelligent, context-aware c
 ✅ **Sticky Progress Comments** - Single updating comment instead of spam  
 ✅ **Security-First** - GitHub App authentication for secure access  
 
-## Quick Start
+## Installation
 
-### 1. Set Up GitHub App
+### Prerequisites
+
+- A GitHub repository with pull requests
+- Node.js 20+ (automatically available in GitHub Actions)
+- A [Continue Hub](https://hub.continue.dev) account
+- A Continue Assistant configured for code reviews
+
+### Step 1: Create a GitHub App
 
 Create a GitHub App with these permissions:
 - **Contents**: Read
 - **Issues**: Write  
 - **Pull Requests**: Write
 
-[Detailed App Setup Guide](actions/codebunny/README.md#prerequisites)
+**Need help?** See the [Detailed GitHub App Setup Guide](actions/codebunny/README.md#prerequisites)
 
-### 2. Configure Secrets
+### Step 2: Install the GitHub App
+
+1. Install your GitHub App on the repository (or organization)
+2. Note the App ID from the app settings
+3. Generate and download a private key
+
+### Step 3: Configure Repository Secrets
+
+In your repository settings, add these **Variables** and **Secrets**:
 
 Add these to your repository settings:
 
-**Variables:**
-```
-CONTINUE_APP_ID=your-app-id
-CONTINUE_ORG=your-continue-org
-CONTINUE_CONFIG=your-org/assistant-name
-```
+#### Variables (Settings → Secrets and variables → Actions → Variables)
+- `CONTINUE_APP_ID` - Your GitHub App ID (found in app settings)
+- `CONTINUE_ORG` - Your Continue Hub organization name
+- `CONTINUE_CONFIG` - Your Continue assistant path (format: `username/assistant-name`)
 
-**Secrets:**
-```
-CONTINUE_APP_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----...
-CONTINUE_API_KEY=your-continue-api-key
-```
+#### Secrets (Settings → Secrets and variables → Actions → Secrets)
+- `CONTINUE_APP_PRIVATE_KEY` - The private key file content (including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`)
+- `CONTINUE_API_KEY` - Your Continue API key from [hub.continue.dev](https://hub.continue.dev)
 
-### 3. Use in Your Repo
+### Step 4: Add Workflow to Your Repository
 
-#### Option A: Use as a GitHub Action (Recommended)
-
-Reference this repo in your workflow:
+Create `.github/workflows/code-review.yml` in your repository:
 
 ```yaml
-# .github/workflows/code-review.yml
 name: Code Review
 
 on:
@@ -91,10 +101,22 @@ jobs:
           continue-config: ${{ vars.CONTINUE_CONFIG }}
 ```
 
-#### Option B: Copy Action to Your Repo
+### Step 5: Test It Out
+
+1. **Create a test PR** or push changes to an existing one
+2. **Watch for the CodeBunny comment** - It will appear automatically
+3. **Try interactive commands** - Comment `@continue-agent review this` on any PR
+
+## Alternative: Self-Hosted Installation
+
+If you prefer to host the action in your own repository:
 
 1. Copy the `actions/codebunny` folder to your repository
-2. Reference it locally: `uses: ./actions/codebunny`
+2. Update the workflow to use the local path:
+   ```yaml
+   - name: CodeBunny Review
+     uses: ./actions/codebunny
+   ```
 
 ## Custom Rules
 
@@ -281,10 +303,17 @@ act pull_request -e .github/events/pull_request.json
 
 MIT License - See LICENSE file for details
 
+## Inspiration & History
+
+CodeBunny was inspired by existing code review automation tools and the need for more context-aware AI reviews. It was initially developed and tested in the [contributor.info](https://github.com/bdougie/contributor.info) repository, where it helped maintain code quality across numerous contributions.
+
+The action has been generalized to work with any JavaScript/TypeScript project, making it easy to add AI-powered code reviews to your workflow.
+
 ## Acknowledgments
 
 - Built with [Continue](https://continue.dev)
-- Inspired by the need for smarter code reviews
+- Tested and refined in [contributor.info](https://github.com/bdougie/contributor.info)
+- Inspired by code review tools like Danger, CodeRabbit, and GitHub Copilot
 - Thanks to the open source community
 
 ---
