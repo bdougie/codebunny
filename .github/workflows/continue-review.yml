@@ -1,0 +1,40 @@
+name: Continue Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@continue-agent'))
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Generate GitHub App token for secure authentication
+      - name: Generate App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.CONTINUE_APP_ID }}
+          private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
+
+      # Run Continue Review with App token
+      - name: Continue Review
+        uses: ./actions/continue-review
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
+          continue-org: ${{ vars.CONTINUE_ORG }}
+          continue-config: ${{ vars.CONTINUE_CONFIG }}
