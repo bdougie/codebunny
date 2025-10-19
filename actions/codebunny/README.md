@@ -16,35 +16,41 @@ A GitHub Action that performs AI-powered code reviews using Continue Agent on pu
 
 ### Prerequisites
 
-1. **GitHub App**
-   - Create a GitHub App with these permissions:
+1. **Continue Hub Account**
+   - Sign up at [hub.continue.dev](https://hub.continue.dev)
+
+2. **Continue Assistant**
+   - Create an assistant following the Continue documentation
+
+3. **GitHub App (Optional)**
+   - For enhanced permissions and rate limits, create a GitHub App with:
      - **Repository permissions:**
        - Contents: Read
        - Issues: Write
        - Pull requests: Write
    - Generate a private key and note the App ID
 
-2. **Continue Hub Account**
-   - Sign up at [hub.continue.dev](https://hub.continue.dev)
-
-3. **Continue Assistant**
-   - Create an assistant following the Continue documentation
-
 ### GitHub Configuration
 
 Store these as secrets/variables in your repository or organization:
 
-**Variables:**
-- `CONTINUE_APP_ID` - Your GitHub App ID
+**Required Variables:**
+- `CONTINUE_ORG` - Your Continue Hub organization
+- `CONTINUE_CONFIG` - Your assistant path (format: `username/assistant-name`)
 
-**Secrets:**
-- `CONTINUE_APP_PRIVATE_KEY` - Your GitHub App private key
+**Required Secrets:**
 - `CONTINUE_API_KEY` - Your Continue API key
+
+**Optional (GitHub App):**
+- `GITHUB_APP_ID` - Your GitHub App ID (Variable)
+- `GITHUB_APP_PRIVATE_KEY` - Your GitHub App private key (Secret)
 
 ### Workflow Configuration
 
+#### Simple Setup (No GitHub App)
+
 ```yaml
-name: Continue Review
+name: CodeBunny Review
 
 on:
   pull_request:
@@ -68,22 +74,57 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Generate GitHub App token for secure authentication
+      - name: CodeBunny Review
+        uses: bdougie/codebunny/actions/codebunny@main
+        with:
+          continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
+          continue-org: ${{ vars.CONTINUE_ORG }}
+          continue-config: ${{ vars.CONTINUE_CONFIG }}
+```
+
+#### With GitHub App (Enhanced)
+
+```yaml
+name: CodeBunny Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@continue-agent'))
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Optional: Generate GitHub App token
       - name: Generate App Token
         id: app-token
+        if: vars.GITHUB_APP_ID != ''
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ vars.CONTINUE_APP_ID }}
-          private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
 
-      # Run CodeBunny Review
       - name: CodeBunny Review
-        uses: your-org/your-repo/actions/codebunny@main
+        uses: bdougie/codebunny/actions/codebunny@main
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ steps.app-token.outputs.token || github.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
-          continue-org: 'your-org'
-          continue-config: 'your-org/assistant-name'
+          continue-org: ${{ vars.CONTINUE_ORG }}
+          continue-config: ${{ vars.CONTINUE_CONFIG }}
 ```
 
 ## How It Works
@@ -175,10 +216,11 @@ You can limit the App token permissions:
 ```yaml
 - name: Generate App Token
   id: app-token
+  if: vars.GITHUB_APP_ID != ''
   uses: actions/create-github-app-token@v1
   with:
-    app-id: ${{ vars.CONTINUE_APP_ID }}
-    private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
+    app-id: ${{ vars.GITHUB_APP_ID }}
+    private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
     permissions: |
       contents: read
       pull-requests: write
@@ -192,10 +234,11 @@ For organizations with many repositories:
 ```yaml
 - name: Generate App Token
   id: app-token
+  if: vars.GITHUB_APP_ID != ''
   uses: actions/create-github-app-token@v1
   with:
-    app-id: ${{ vars.CONTINUE_APP_ID }}
-    private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
+    app-id: ${{ vars.GITHUB_APP_ID }}
+    private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
     repositories: |
       repo1
       repo2

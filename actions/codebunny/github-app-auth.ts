@@ -3,22 +3,25 @@ import * as github from '@actions/github';
 
 /**
  * Get authenticated Octokit instance
- * This expects the token to be a GitHub App installation token generated
- * by actions/create-github-app-token in the workflow
+ * Falls back to GITHUB_TOKEN if no token is provided
  */
 export async function getAuthenticatedOctokit(
-  githubToken: string
+  githubToken?: string
 ): Promise<ReturnType<typeof github.getOctokit>> {
-  // Validate that we have a token
-  if (!githubToken) {
+  // Use provided token or fall back to GITHUB_TOKEN
+  const token = githubToken || process.env.GITHUB_TOKEN || '';
+  
+  if (!token) {
     throw new Error(
-      'GitHub token is required. Please provide a token from actions/create-github-app-token or GITHUB_TOKEN'
+      'GitHub token is required. Either provide github-token input or ensure GITHUB_TOKEN is available'
     );
   }
 
-  core.info('Using provided GitHub token for API calls');
+  if (githubToken) {
+    core.info('Using provided GitHub token for API calls');
+  } else {
+    core.info('Using default GITHUB_TOKEN for API calls');
+  }
 
-  // The token should already be an App installation token if the workflow
-  // is configured correctly with actions/create-github-app-token
-  return github.getOctokit(githubToken);
+  return github.getOctokit(token);
 }

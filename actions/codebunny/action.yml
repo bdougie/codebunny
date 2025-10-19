@@ -6,8 +6,9 @@ inputs:
     description: 'API key for Continue service'
     required: true
   github-token:
-    description: 'GitHub token for API access (use output from actions/create-github-app-token for App authentication)'
-    required: true
+    description: 'GitHub token for API access (defaults to GITHUB_TOKEN if not provided)'
+    required: false
+    default: ''
   continue-org:
     description: 'Continue organization/username from Continue Hub'
     required: true

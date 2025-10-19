@@ -35,30 +35,34 @@ Create a GitHub App with these permissions:
 
 **Need help?** See the [Detailed GitHub App Setup Guide](actions/codebunny/README.md#prerequisites)
 
-### Step 2: Install the GitHub App
+### Step 2: Configure Repository Secrets
 
-1. Install your GitHub App on the repository (or organization)
-2. Note the App ID from the app settings
-3. Generate and download a private key
+Add these to your repository settings (Settings → Secrets and variables → Actions):
 
-### Step 3: Configure Repository Secrets
-
-In your repository settings, add these **Variables** and **Secrets**:
-
-Add these to your repository settings:
-
-#### Variables (Settings → Secrets and variables → Actions → Variables)
-- `CONTINUE_APP_ID` - Your GitHub App ID (found in app settings)
+#### Variables (Required)
 - `CONTINUE_ORG` - Your Continue Hub organization name
 - `CONTINUE_CONFIG` - Your Continue assistant path (format: `username/assistant-name`)
 
-#### Secrets (Settings → Secrets and variables → Actions → Secrets)
-- `CONTINUE_APP_PRIVATE_KEY` - The private key file content (including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`)
+#### Secrets (Required)
 - `CONTINUE_API_KEY` - Your Continue API key from [hub.continue.dev](https://hub.continue.dev)
 
-### Step 4: Add Workflow to Your Repository
+#### Optional: GitHub App (Recommended for enhanced permissions)
+
+For better API rate limits and permissions, you can optionally set up a GitHub App:
+
+**Variables:**
+- `GITHUB_APP_ID` - Your GitHub App ID (found in app settings)
+
+**Secrets:**
+- `GITHUB_APP_PRIVATE_KEY` - The private key file content
+
+**Without GitHub App:** The action will use the default `GITHUB_TOKEN` with standard permissions.
+
+### Step 3: Add Workflow to Your Repository
 
 Create `.github/workflows/code-review.yml` in your repository:
+
+#### Option A: Simple Setup (No GitHub App)
 
 ```yaml
 name: Code Review
@@ -85,23 +89,60 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate App Token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.CONTINUE_APP_ID }}
-          private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
-
       - name: CodeBunny Review
         uses: bdougie/codebunny/actions/codebunny@main
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
           continue-org: ${{ vars.CONTINUE_ORG }}
           continue-config: ${{ vars.CONTINUE_CONFIG }}
 ```
 
-### Step 5: Test It Out
+#### Option B: With GitHub App (Enhanced Permissions)
+
+```yaml
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@continue-agent'))
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Optional: Generate GitHub App token
+      - name: Generate App Token
+        id: app-token
+        if: vars.GITHUB_APP_ID != ''
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+
+      - name: CodeBunny Review
+        uses: bdougie/codebunny/actions/codebunny@main
+        with:
+          github-token: ${{ steps.app-token.outputs.token || github.token }}
+          continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
+          continue-org: ${{ vars.CONTINUE_ORG }}
+          continue-config: ${{ vars.CONTINUE_CONFIG }}
+```
+
+### Step 4: Test It Out
 
 1. **Create a test PR** or push changes to an existing one
 2. **Watch for the CodeBunny comment** - It will appear automatically

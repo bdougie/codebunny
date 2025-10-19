@@ -22,19 +22,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Generate GitHub App token for secure authentication
+      # Optional: Generate GitHub App token for enhanced permissions
+      # If not used, will fallback to default GITHUB_TOKEN
       - name: Generate App Token
         id: app-token
+        if: vars.GITHUB_APP_ID != ''
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ vars.CONTINUE_APP_ID }}
-          private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
 
       # Run CodeBunny Review
       - name: CodeBunny Review
         uses: ./actions/codebunny
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ steps.app-token.outputs.token || github.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
           continue-org: ${{ vars.CONTINUE_ORG }}
           continue-config: ${{ vars.CONTINUE_CONFIG }}
