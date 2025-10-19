@@ -24,7 +24,7 @@ Create a GitHub App with these permissions:
 - **Issues**: Write  
 - **Pull Requests**: Write
 
-[Detailed App Setup Guide](actions/continue-review/README.md#prerequisites)
+[Detailed App Setup Guide](actions/codebunny/README.md#prerequisites)
 
 ### 2. Configure Secrets
 
@@ -82,8 +82,8 @@ jobs:
           app-id: ${{ vars.CONTINUE_APP_ID }}
           private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
 
-      - name: Code Review
-        uses: bdougie/codebunny/actions/continue-review@main
+      - name: CodeBunny Review
+        uses: bdougie/codebunny/actions/codebunny@main
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
@@ -93,8 +93,8 @@ jobs:
 
 #### Option B: Copy Action to Your Repo
 
-1. Copy the `actions/continue-review` folder to your repository
-2. Reference it locally: `uses: ./actions/continue-review`
+1. Copy the `actions/codebunny` folder to your repository
+2. Reference it locally: `uses: ./actions/codebunny`
 
 ## Custom Rules
 
@@ -205,7 +205,7 @@ Comment on any PR to trigger focused reviews:
 ```
 codebunny/
 ├── actions/
-│   └── continue-review/        # Main action implementation
+│   └── codebunny/              # Main action implementation
 │       ├── action.yml          # Action definition
 │       ├── index.ts            # Main entry point
 │       ├── codebase-analyzer.ts
@@ -217,7 +217,7 @@ codebunny/
 │       └── README.md
 ├── .github/
 │   └── workflows/
-│       └── continue-review.yml # Example workflow
+│       └── codebunny.yml       # Example workflow
 └── README.md
 ```
 
@@ -264,7 +264,7 @@ Contributions welcome! This project helps make code reviews more intelligent and
 
 ```bash
 git clone https://github.com/bdougie/codebunny.git
-cd codebunny/actions/continue-review
+cd codebunny/actions/codebunny
 npm install
 npm run build
 ```

@@ -1,4 +1,4 @@
-name: Continue Review
+name: CodeBunny Review
 
 on:
   pull_request:
@@ -30,9 +30,9 @@ jobs:
           app-id: ${{ vars.CONTINUE_APP_ID }}
           private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
 
-      # Run Continue Review with App token
-      - name: Continue Review
-        uses: ./actions/continue-review
+      # Run CodeBunny Review
+      - name: CodeBunny Review
+        uses: ./actions/codebunny
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}

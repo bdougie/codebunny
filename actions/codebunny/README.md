@@ -1,4 +1,4 @@
-# Continue Agent Review Action
+# CodeBunny AI Review Action
 
 A GitHub Action that performs AI-powered code reviews using Continue Agent on pull requests.
 
@@ -76,9 +76,9 @@ jobs:
           app-id: ${{ vars.CONTINUE_APP_ID }}
           private-key: ${{ secrets.CONTINUE_APP_PRIVATE_KEY }}
 
-      # Run Continue Review with App token
-      - name: Continue Review
-        uses: your-org/your-repo/actions/continue-review@main
+      # Run CodeBunny Review
+      - name: CodeBunny Review
+        uses: your-org/your-repo/actions/codebunny@main
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
