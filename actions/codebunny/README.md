@@ -42,8 +42,8 @@ Store these as secrets/variables in your repository or organization:
 - `CONTINUE_API_KEY` - Your Continue API key
 
 **Optional (GitHub App):**
-- `GITHUB_APP_ID` - Your GitHub App ID (Variable)
-- `GITHUB_APP_PRIVATE_KEY` - Your GitHub App private key (Secret)
+- `APP_ID` - Your GitHub App ID (Variable)
+- `APP_PRIVATE_KEY` - Your GitHub App private key (Secret)
 
 ### Workflow Configuration
 
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@continue-agent'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codebunny'))
     steps:
       - uses: actions/checkout@v4
         with:
@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@continue-agent'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codebunny'))
     steps:
       - uses: actions/checkout@v4
         with:
@@ -112,11 +112,11 @@ jobs:
       # Optional: Generate GitHub App token
       - name: Generate App Token
         id: app-token
-        if: vars.GITHUB_APP_ID != ''
+        if: vars.APP_ID != ''
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ vars.GITHUB_APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: CodeBunny Review
         uses: bdougie/codebunny/actions/codebunny@main
@@ -202,9 +202,9 @@ description: "Testing Standards"
 Trigger specific reviews with PR comments:
 
 ```
-@continue-agent check for security issues
-@continue-agent review the TypeScript types
-@continue-agent suggest performance improvements
+@codebunny check for security issues
+@codebunny review the TypeScript types
+@codebunny suggest performance improvements
 ```
 
 ## Advanced Configuration
@@ -216,11 +216,11 @@ You can limit the App token permissions:
 ```yaml
 - name: Generate App Token
   id: app-token
-  if: vars.GITHUB_APP_ID != ''
+  if: vars.APP_ID != ''
   uses: actions/create-github-app-token@v1
   with:
-    app-id: ${{ vars.GITHUB_APP_ID }}
-    private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+    app-id: ${{ vars.APP_ID }}
+    private-key: ${{ secrets.APP_PRIVATE_KEY }}
     permissions: |
       contents: read
       pull-requests: write
@@ -234,11 +234,11 @@ For organizations with many repositories:
 ```yaml
 - name: Generate App Token
   id: app-token
-  if: vars.GITHUB_APP_ID != ''
+  if: vars.APP_ID != ''
   uses: actions/create-github-app-token@v1
   with:
-    app-id: ${{ vars.GITHUB_APP_ID }}
-    private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+    app-id: ${{ vars.APP_ID }}
+    private-key: ${{ secrets.APP_PRIVATE_KEY }}
     repositories: |
       repo1
       repo2

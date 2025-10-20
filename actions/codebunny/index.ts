@@ -629,7 +629,7 @@ async function postEnhancedReview(
   isProgress: boolean = false,
   updateCommentId?: number
 ): Promise<number | undefined> {
-  const marker = '<!-- continue-agent-review -->';
+  const marker = '<!-- codebunny-review -->';
   const timestamp = new Date().toISOString();
 
   core.info(`Posting enhanced review comment to PR #${prNumber} (isProgress: ${isProgress})`);
@@ -708,7 +708,7 @@ async function postEnhancedReview(
  * Extract command from comment
  */
 function extractCommand(comment: string): string | undefined {
-  const match = comment.match(/@continue-agent\s+(.+)/);
+  const match = comment.match(/@codebunny\s+(.+)/);
   return match ? match[1].trim() : undefined;
 }
 
@@ -791,12 +791,12 @@ async function run(): Promise<void> {
       const comment = context.payload.comment?.body || '';
       core.info(`Comment body (first 200 chars): ${comment.substring(0, 200)}`);
 
-      if (!comment.includes('@continue-agent')) {
-        core.info('Comment does not mention @continue-agent, skipping');
+      if (!comment.includes('@codebunny')) {
+        core.info('Comment does not mention @codebunny, skipping');
         return;
       }
 
-      core.info('Found @continue-agent mention, proceeding with review...');
+      core.info('Found @codebunny mention, proceeding with review...');
 
       // Add 👀 reaction to confirm the bot is processing the request
       const commentId = context.payload.comment?.id;

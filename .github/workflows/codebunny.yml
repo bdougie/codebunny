@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@continue-agent'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codebunny'))
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,11 +26,11 @@ jobs:
       # If not used, will fallback to default GITHUB_TOKEN
       - name: Generate App Token
         id: app-token
-        if: vars.GITHUB_APP_ID != ''
+        if: vars.APP_ID != ''
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ vars.GITHUB_APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       # Run CodeBunny Review
       - name: CodeBunny Review

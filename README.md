@@ -58,10 +58,10 @@ Add these to your repository settings (Settings → Secrets and variables → Ac
 For better API rate limits and permissions, you can optionally set up a GitHub App:
 
 **Variables:**
-- `GITHUB_APP_ID` - Your GitHub App ID (found in app settings)
+- `APP_ID` - Your GitHub App ID (found in app settings)
 
 **Secrets:**
-- `GITHUB_APP_PRIVATE_KEY` - The private key file content
+- `APP_PRIVATE_KEY` - The private key file content
 
 **Without GitHub App:** The action will use the default `GITHUB_TOKEN` with standard permissions.
 
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@continue-agent'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codebunny'))
     steps:
       - uses: actions/checkout@v4
         with:
@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@continue-agent'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codebunny'))
     steps:
       - uses: actions/checkout@v4
         with:
@@ -134,11 +134,11 @@ jobs:
       # Optional: Generate GitHub App token
       - name: Generate App Token
         id: app-token
-        if: vars.GITHUB_APP_ID != ''
+        if: vars.APP_ID != ''
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ vars.GITHUB_APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: CodeBunny Review
         uses: bdougie/codebunny/actions/codebunny@main
@@ -153,7 +153,7 @@ jobs:
 
 1. **Create a test PR** or push changes to an existing one
 2. **Watch for the CodeBunny comment** - It will appear automatically
-3. **Try interactive commands** - Comment `@continue-agent review this` on any PR
+3. **Try interactive commands** - Comment `@codebunny review this` on any PR
 
 ## Alternative: Self-Hosted Installation
 
@@ -223,10 +223,10 @@ description: "Testing Standards"
 Comment on any PR to trigger focused reviews:
 
 ```
-@continue-agent check for security issues
-@continue-agent review the TypeScript types
-@continue-agent explain the architecture changes
-@continue-agent suggest performance improvements
+@codebunny check for security issues
+@codebunny review the TypeScript types
+@codebunny explain the architecture changes
+@codebunny suggest performance improvements
 ```
 
 ## How It Works
