@@ -99,7 +99,7 @@ jobs:
           fetch-depth: 0
 
       - name: CodeBunny Review
-        uses: bdougie/codebunny/actions/codebunny@main
+        uses: bdougie/codebunny@main
         with:
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
           continue-org: ${{ vars.CONTINUE_ORG }}
@@ -143,7 +143,7 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: CodeBunny Review
-        uses: bdougie/codebunny/actions/codebunny@main
+        uses: bdougie/codebunny@main
         with:
           github-token: ${{ steps.app-token.outputs.token || github.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
