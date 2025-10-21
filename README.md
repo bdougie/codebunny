@@ -1,3 +1,5 @@
+![CodeBunny Banner](.github/codebunny-banner.png)
+
 # CodeBunny 🐰
 
 A GitHub Action for AI-powered code reviews using Continue Agent.
