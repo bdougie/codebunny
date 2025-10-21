@@ -12,7 +12,7 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 
 **Own Your Review Data** - Unlike SaaS code review services, CodeBunny runs entirely in your GitHub Actions environment. Your code never leaves your repository, and all review data stays under your control.
 
-**Powered by Continue** - Built on [Continue](https://www.continue.dev/), the leading open-source AI code assistant. Use Continue's hosted service or [self-host your own instance](https://docs.continue.dev/quickstart) for complete control.
+**Powered by Continue** - Built on [Continue](https://www.continue.dev/), the leading open-source AI code assistant. Use Continue's hosted service or [bring your own key (BYOK)](https://docs.continue.dev/guides/understanding-configs) for complete control.
 
 **Battle-Tested** - Inspired by existing code review tools and refined in the [contributor.info](https://github.com/bdougie/contributor.info) repository. Now generalized for any JavaScript/TypeScript project.
 
@@ -21,10 +21,10 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 ✅ **Automated AI Reviews** - Reviews are triggered automatically on PR creation and updates  
 ✅ **Codebase Pattern Analysis** - Understands your project's conventions and architecture  
 ✅ **Custom Rules** - Define project-specific review guidelines  
-✅ **Interactive Commands** - Trigger focused reviews with `@continue-agent` mentions  
+✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions  
 ✅ **Sticky Progress Comments** - Single updating comment instead of spam  
 ✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
-✅ **Self-Hostable** - Use Continue's cloud or [self-host](https://docs.continue.dev/quickstart) for full control  
+✅ **Bring Your Own Key** - Use Continue's cloud or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
 
 ## Installation
 
@@ -32,7 +32,7 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 
 - A GitHub repository with pull requests
 - Node.js 20+ (automatically available in GitHub Actions)
-- A [Continue account](https://hub.continue.dev) (or [self-hosted Continue](https://docs.continue.dev/quickstart))
+- A [Continue account](https://hub.continue.dev) (or [BYOK setup](https://docs.continue.dev/guides/understanding-configs))
 - A Continue Assistant configured for code reviews
 
 ### Step 1: Create a GitHub App
@@ -53,7 +53,7 @@ Add these to your repository settings (Settings → Secrets and variables → Ac
 - `CONTINUE_CONFIG` - Your Continue assistant path (format: `username/assistant-name`)
 
 #### Secrets (Required)
-- `CONTINUE_API_KEY` - Your Continue API key from [hub.continue.dev](https://hub.continue.dev) (or your self-hosted instance)
+- `CONTINUE_API_KEY` - Your Continue API key from [hub.continue.dev](https://hub.continue.dev) (or your BYOK provider)
 
 #### Optional: GitHub App (Recommended for enhanced permissions)
 
@@ -361,13 +361,13 @@ MIT License - See LICENSE file for details
 
 **Own Your Review History** - All review data is stored as GitHub comments and optional metrics in your repository. You control the data, not a vendor.
 
-**Self-Hosting Option** - Use [Continue's cloud service](https://hub.continue.dev) or [self-host Continue](https://docs.continue.dev/quickstart) for complete control over your AI infrastructure.
+**Bring Your Own Key Option** - Use [Continue's cloud service](https://hub.continue.dev) or [bring your own API keys](https://docs.continue.dev/guides/understanding-configs) for complete control over your AI infrastructure.
 
 ### Transparent & Open Source
 
 **MIT Licensed** - Fork it, modify it, extend it. The code is yours.
 
-**No Vendor Lock-In** - Switch between Continue's cloud and self-hosted at any time. Your review configuration stays the same.
+**No Vendor Lock-In** - Switch between Continue's cloud and BYOK at any time. Your review configuration stays the same.
 
 **Community-Driven** - Built on [Continue](https://www.continue.dev/), the open-source AI code assistant trusted by developers worldwide.
 

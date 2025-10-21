@@ -7,10 +7,11 @@ A GitHub Action that performs AI-powered code reviews using Continue Agent on pu
 - 🤖 **Automated AI Code Reviews** - Intelligent code analysis on every PR
 - 🧠 **Codebase Analysis** - Understands your project's patterns and conventions
 - 📝 **Custom Rules Support** - Define project-specific review guidelines
-- 💬 **Interactive Commands** - Trigger reviews with `@continue-agent` comments
+- 💬 **Interactive Commands** - Trigger reviews with `@codebunny` comments
 - 📊 **Clean Comments** - Single updating comment with progress
 - ✅ **Universal** - Works with any JavaScript/TypeScript project
 - 🔐 **Secure** - GitHub App authentication
+- 🔑 **BYOK Support** - Use Continue's cloud or [bring your own keys](https://docs.continue.dev/guides/understanding-configs)
 
 ## Setup
 
@@ -18,6 +19,7 @@ A GitHub Action that performs AI-powered code reviews using Continue Agent on pu
 
 1. **Continue Hub Account**
    - Sign up at [hub.continue.dev](https://hub.continue.dev)
+   - Or use [BYOK with your own API keys](https://docs.continue.dev/guides/understanding-configs)
 
 2. **Continue Assistant**
    - Create an assistant following the Continue documentation
@@ -132,7 +134,7 @@ jobs:
 1. **Triggers on**:
    - New PRs opened
    - PR updates (new commits)
-   - Comments with `@continue-agent`
+   - Comments with `@codebunny`
 
 2. **Analyzes codebase**:
    - Detects frameworks and libraries
