@@ -9,6 +9,15 @@ import { getAuthenticatedOctokit } from './github-app-auth';
 import { analyzeCodebasePatterns } from './codebase-analyzer';
 import { generateEnhancedPrompt } from './enhanced-prompt-generator';
 import { ReviewMetricsTracker, parseReviewMetrics, extractProjectType } from './review-metrics';
+import {
+  ReviewSnapshot,
+  ReviewHistory,
+  extractReviewState,
+  uploadReviewSnapshot,
+  downloadPreviousReviews,
+  buildReviewHistory,
+  saveReviewSummary,
+} from './review-history';
 
 interface Rule {
   file: string;
@@ -945,6 +954,42 @@ async function run(): Promise<void> {
       false,
       progressCommentId
     );
+
+    // Create and upload review snapshot for historical tracking
+    core.info('Creating review snapshot for historical tracking...');
+    const reviewSnapshot: ReviewSnapshot = {
+      timestamp: new Date().toISOString(),
+      prNumber: pr.number,
+      prTitle: pr.title,
+      prAuthor: pr.user?.login || 'unknown',
+      filesChanged: files.length,
+      reviewState: extractReviewState(review),
+      reviewText: review,
+      metrics: {
+        processingTime: metrics.processingTime,
+        issuesFound: reviewAnalysis.issuesFound,
+        rulesApplied: metrics.rulesApplied,
+        patternsDetected: metrics.patternsDetected,
+      },
+      codebunnyMentioned: !!command,
+      commentId: progressCommentId,
+    };
+
+    // Upload snapshot as artifact
+    await uploadReviewSnapshot(reviewSnapshot);
+
+    // Download previous reviews and build history
+    core.info('Checking for previous review history...');
+    const previousSnapshots = await downloadPreviousReviews(pr.number);
+    const allSnapshots = [...previousSnapshots, reviewSnapshot];
+    
+    if (allSnapshots.length > 0) {
+      const history = buildReviewHistory(allSnapshots);
+      if (history) {
+        core.info(`Building review history with ${allSnapshots.length} snapshots...`);
+        await saveReviewSummary(history);
+      }
+    }
 
     core.info('🎉 Enhanced review completed successfully');
   } catch (error) {
