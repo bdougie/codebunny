@@ -24,7 +24,7 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 ✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions  
 ✅ **Sticky Progress Comments** - Single updating comment instead of spam  
 ✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
-✅ **Bring Your Own Key** - Use Continue's cloud or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
+✅ **Bring Your Own Key** - Use Continue's Hub or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
 
 ## Installation
 
