@@ -23,6 +23,8 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 ✅ **Custom Rules** - Define project-specific review guidelines  
 ✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions  
 ✅ **Sticky Progress Comments** - Single updating comment instead of spam  
+✅ **Review History Tracking** - Persistent review summaries in `.contributor/reviews/`  
+✅ **Approval State Monitoring** - Track how often PRs go in/out of approval  
 ✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
 ✅ **Bring Your Own Key** - Use Continue's Hub or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
 
@@ -283,10 +285,14 @@ codebunny/
 │       ├── codebase-analyzer.ts
 │       ├── enhanced-prompt-generator.ts
 │       ├── review-metrics.ts
+│       ├── review-history.ts   # Historical review tracking
 │       ├── github-app-auth.ts
 │       ├── package.json
 │       ├── tsconfig.json
 │       └── README.md
+├── .contributor/
+│   └── reviews/                # Historical review summaries
+│       └── pr-*.md             # Per-PR review history
 ├── .github/
 │   └── workflows/
 │       └── codebunny.yml       # Example workflow
@@ -301,15 +307,31 @@ codebunny/
 - `CONTINUE_API_KEY` - Your Continue API key
 - `GITHUB_TOKEN` - GitHub App installation token
 
-### Metrics Tracking
+### Review History Tracking
 
-The action tracks review metrics in `.continue/review-metrics.json`:
-- Processing time
+CodeBunny maintains a historical record of all reviews for continuous learning:
+
+**Review Summaries** (`.contributor/reviews/pr-{number}.md`):
+- Chronological log of all reviews for each PR
+- Approval state transitions (MERGE ✅ → CHANGES 🔄 → MERGE ✅)
+- @codebunny mention timestamps and responses
+- Key metrics: processing time, issues found, patterns detected
+- Expandable sections with full review details
+
+**Review Metrics** (`.continue/review-metrics.json`):
+- Processing time trends
 - Issues found by priority
-- Rules applied
-- Patterns detected
+- Rules applied per review
+- Patterns detected across reviews
 
-View metrics in your review comments.
+**How It Works:**
+1. Each review is saved as a GitHub Actions artifact
+2. On subsequent reviews, previous artifacts are downloaded
+3. Review history is aggregated into markdown files
+4. Approval state changes are tracked and counted
+5. @codebunny mentions are logged with timestamps
+
+View your review summaries in `.contributor/reviews/` to see how your PRs evolved!
 
 ## Troubleshooting
 

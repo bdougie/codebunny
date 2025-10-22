@@ -22,6 +22,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Download previous review artifacts for history tracking
+      - name: Download Previous Review Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: codebunny-review-pr-*
+          path: /tmp/review-artifacts
+          merge-multiple: true
+
       # Optional: Generate GitHub App token for enhanced permissions
       # If not used, will fallback to default GITHUB_TOKEN
       - name: Generate App Token
