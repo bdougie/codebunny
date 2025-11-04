@@ -28,6 +28,28 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 
 ## Installation
 
+### Versioning
+
+CodeBunny follows [Semantic Versioning](https://semver.org/). We recommend pinning to a specific major version for stability:
+
+```yaml
+# Recommended: Pin to major version (gets latest features and fixes)
+- uses: bdougie/codebunny@v1
+
+# Pin to specific version (maximum stability)
+- uses: bdougie/codebunny@v1.0.0
+
+# Always latest (not recommended for production)
+- uses: bdougie/codebunny@main
+```
+
+**Version Types:**
+- **Major (v1, v2)** - May include breaking changes
+- **Minor (v1.1, v1.2)** - New features, backward compatible
+- **Patch (v1.0.1, v1.0.2)** - Bug fixes only
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
+
 ### Prerequisites
 
 - A GitHub repository with pull requests
@@ -99,7 +121,7 @@ jobs:
           fetch-depth: 0
 
       - name: CodeBunny Review
-        uses: bdougie/codebunny@main
+        uses: bdougie/codebunny@v1
         with:
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
           continue-org: ${{ vars.CONTINUE_ORG }}
@@ -143,7 +165,7 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: CodeBunny Review
-        uses: bdougie/codebunny@main
+        uses: bdougie/codebunny@v1
         with:
           github-token: ${{ steps.app-token.outputs.token || github.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
