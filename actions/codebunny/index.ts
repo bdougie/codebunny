@@ -976,12 +976,17 @@ async function run(): Promise<void> {
     };
 
     // Upload snapshot as artifact
-    await uploadReviewSnapshot(reviewSnapshot);
+    core.info('Uploading review snapshot as artifact...');
+    const uploadSuccessful = await uploadReviewSnapshot(reviewSnapshot);
 
     // Download previous reviews and build history
     core.info('Checking for previous review history...');
     const previousSnapshots = await downloadPreviousReviews(pr.number);
-    const allSnapshots = [...previousSnapshots, reviewSnapshot];
+    
+    // Only include current snapshot in history if upload was successful
+    const allSnapshots = uploadSuccessful 
+      ? [...previousSnapshots, reviewSnapshot]
+      : previousSnapshots;
     
     if (allSnapshots.length > 0) {
       const history = buildReviewHistory(allSnapshots);

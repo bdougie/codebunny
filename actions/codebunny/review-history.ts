@@ -36,23 +36,29 @@ export interface ReviewHistory {
  * Extract review state from review text
  */
 export function extractReviewState(reviewText: string): ReviewSnapshot['reviewState'] {
-  const tldrSection = reviewText.match(/## 🎯 TLDR[\s\S]*?\*\*Recommendation\*\*:\s*([^\n]+)/i);
+  const tldrSection = reviewText.match(/##\s*🎯\s*TLDR[\s\S]*?\*\*Recommendation\*\*:\s*([^\n]+)/i);
   
   if (!tldrSection) {
     return 'UNKNOWN';
   }
 
-  const recommendation = tldrSection[1].toLowerCase();
+  const recommendation = tldrSection[1].toLowerCase().trim();
   
-  if (recommendation.includes('merge ✅') || recommendation.includes('merge') && recommendation.includes('✅')) {
+  // Check for emojis first as they're more reliable
+  if (recommendation.includes('✅')) return 'MERGE';
+  if (recommendation.includes('❌')) return 'DONT_MERGE';
+  if (recommendation.includes('🔄')) return 'MERGE_AFTER_CHANGES';
+  
+  // Fallback to text matching
+  if (recommendation.match(/\bmerge\b/) && !recommendation.match(/don'?t|after/)) {
     return 'MERGE';
   }
   
-  if (recommendation.includes("don't merge") || recommendation.includes('❌')) {
+  if (recommendation.match(/don'?t\s+merge/)) {
     return 'DONT_MERGE';
   }
   
-  if (recommendation.includes('merge after changes') || recommendation.includes('🔄')) {
+  if (recommendation.match(/merge\s+after\s+changes/)) {
     return 'MERGE_AFTER_CHANGES';
   }
   
@@ -85,7 +91,7 @@ export function countApprovalChanges(snapshots: ReviewSnapshot[]): number {
 /**
  * Upload review snapshot as GitHub Actions artifact
  */
-export async function uploadReviewSnapshot(snapshot: ReviewSnapshot): Promise<void> {
+export async function uploadReviewSnapshot(snapshot: ReviewSnapshot): Promise<boolean> {
   try {
     const artifactName = `codebunny-review-pr-${snapshot.prNumber}-${Date.now()}`;
     const artifactPath = path.join('/tmp', `${artifactName}.json`);
@@ -106,9 +112,12 @@ export async function uploadReviewSnapshot(snapshot: ReviewSnapshot): Promise<vo
     
     // Clean up temp file
     await fs.unlink(artifactPath).catch(() => {});
+    
+    return true;
   } catch (error) {
     core.warning(`Failed to upload review snapshot: ${error}`);
     // Don't fail the action if artifact upload fails
+    return false;
   }
 }
 
@@ -142,9 +151,13 @@ export async function downloadPreviousReviews(
       for (const file of files) {
         if (file.startsWith(artifactPattern) && file.endsWith('.json')) {
           const filePath = path.join(downloadDir, file);
-          const content = await fs.readFile(filePath, 'utf-8');
-          const snapshot = JSON.parse(content) as ReviewSnapshot;
-          snapshots.push(snapshot);
+          try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const snapshot = JSON.parse(content) as ReviewSnapshot;
+            snapshots.push(snapshot);
+          } catch (error) {
+            core.warning(`Failed to parse artifact ${file}: ${error}`);
+          }
         }
       }
     } catch (error) {
@@ -271,8 +284,16 @@ export function generateReviewSummaryMarkdown(history: ReviewHistory): string {
  */
 export async function saveReviewSummary(history: ReviewHistory): Promise<void> {
   try {
-    const reviewsDir = path.join(process.cwd(), '.contributor', 'reviews');
-    await fs.mkdir(reviewsDir, { recursive: true });
+    const contributorDir = path.join(process.cwd(), '.contributor');
+    const reviewsDir = path.join(contributorDir, 'reviews');
+    
+    // Create directory with error handling
+    try {
+      await fs.mkdir(reviewsDir, { recursive: true });
+    } catch (error) {
+      core.warning(`Failed to create contributor directory: ${error}`);
+      throw error;
+    }
 
     const filename = `pr-${history.prNumber}.md`;
     const filepath = path.join(reviewsDir, filename);
