@@ -247,6 +247,76 @@ For organizations with many repositories:
       repo3
 ```
 
+## Prisma Postgres Storage (Optional)
+
+Enable persistent review history and analytics using Postgres via Prisma.
+
+Workflow example:
+
+```yaml
+- name: CodeBunny Review (with Prisma Postgres)
+  uses: bdougie/codebunny/actions/codebunny@main
+  with:
+    continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
+    continue-org: ${{ vars.CONTINUE_ORG }}
+    continue-config: ${{ vars.CONTINUE_CONFIG }}
+    enable-prisma-storage: 'true'
+    # Prisma Postgres connection strings
+    database-url: ${{ secrets.PRISMA_DATABASE_URL }}          # e.g. prisma://xxxxxxxx
+    direct-database-url: ${{ secrets.PRISMA_DIRECT_DATABASE_URL }} # e.g. postgresql://user:pass@host/db
+```
+
+⚠️ Note: The action automatically creates database tables on first run using `prisma db push`. Make sure the database exists and the connection string has CREATE TABLE permissions.
+
+Where to get connection strings (Prisma Postgres):
+- In Prisma Postgres, create or open your database
+- Copy the Prisma connection URL (prisma://...) and store as secret PRISMA_DATABASE_URL
+- Copy the Direct connection URL (postgresql://...) and store as secret PRISMA_DIRECT_DATABASE_URL
+  - DIRECT is optional but recommended to ensure schema migrations succeed
+
+Behavior and fallbacks:
+- If enable-prisma-storage is 'true' and DATABASE_URL is provided, the action uses Prisma storage
+- If Prisma setup fails or DATABASE_URL is missing, it gracefully falls back to file storage and continues
+
+What Works Well
+- ✅ Graceful fallback to file storage if Prisma fails
+- ✅ Clear explanation of benefits
+- ✅ Good example SQL queries for analytics
+- ✅ Opt-in by default (won't break existing users)
+
+Example analytics queries (run against your Postgres):
+```sql
+-- Top repositories by total reviews
+SELECT repository, COUNT(*) AS total_reviews
+FROM "ReviewSnapshot"
+GROUP BY repository
+ORDER BY total_reviews DESC
+LIMIT 10;
+
+-- Average issues found per review
+SELECT AVG("issuesHigh" + "issuesMedium" + "issuesLow") AS avg_issues
+FROM "ReviewSnapshot";
+
+-- Approval states distribution
+SELECT "reviewState", COUNT(*) AS count
+FROM "ReviewSnapshot"
+GROUP BY "reviewState"
+ORDER BY count DESC;
+```
+
+Documentation status and next steps
+- Summary: The core functionality works; docs have been updated to match the simplified implementation.
+- Users were previously confused by:
+  - Unused inputs
+  - "Coming soon" features that were removed
+  - Missing step-by-step guide for getting connection strings
+
+Recommended next steps
+1. Remove prisma-api-key and prisma-database-id from action.yml (done/not applicable)
+2. Make DIRECT_DATABASE_URL optional for Prisma Postgres users (done)
+3. Add detailed "Where to get connection strings" section with screenshots (added; screenshots optional)
+4. Remove "Option B (coming soon)" or clarify it's not implemented (ensure any references are removed)
+
 ## Troubleshooting
 
 ### App Not Installed

@@ -740,11 +740,18 @@ async function createStorageProvider(enablePrismaStorage: string): Promise<IRevi
     }
 
     // Validate required environment variables
-    if (!process.env.DATABASE_URL || !process.env.DIRECT_DATABASE_URL) {
+    if (!process.env.DATABASE_URL) {
       core.warning(
-        'Prisma storage enabled but DATABASE_URL or DIRECT_DATABASE_URL not set. Falling back to file storage.'
+        'Prisma storage enabled but DATABASE_URL not set. Provide a Prisma Postgres or Postgres connection string. Falling back to file storage.'
       );
       return new FileStorage();
+    }
+
+    // Warn if using Prisma Accelerate/Prisma Postgres URL without direct URL
+    if (!process.env.DIRECT_DATABASE_URL && process.env.DATABASE_URL.startsWith('prisma://')) {
+      core.warning(
+        'DIRECT_DATABASE_URL is not set while using a prisma:// DATABASE_URL. Prisma migrations may fail. Provide a direct postgresql:// URL in direct-database-url input to ensure schema sync.'
+      );
     }
 
     // Initialize Prisma storage
@@ -754,7 +761,7 @@ async function createStorageProvider(enablePrismaStorage: string): Promise<IRevi
       const prismaSetup = new PrismaSetup({
         apiKey: '', // Not needed for manual connection strings
         connectionString: process.env.DATABASE_URL,
-        directUrl: process.env.DIRECT_DATABASE_URL,
+        directUrl: process.env.DIRECT_DATABASE_URL, // Optional
       });
       const { connectionString, directUrl } = await prismaSetup.initialize();
 

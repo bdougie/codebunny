@@ -6,7 +6,7 @@ import * as path from 'path';
 export interface PrismaConfig {
   apiKey: string; // Kept for future use, not currently used
   connectionString: string;
-  directUrl: string;
+  directUrl?: string; // Optional - will fall back to connectionString if not provided
 }
 
 /**
@@ -28,10 +28,12 @@ export class PrismaSetup {
       // Generate Prisma Client and push schema
       await this.generatePrismaClient(this.config.connectionString, this.config.directUrl);
 
+      const resolvedDirectUrl = this.config.directUrl || this.config.connectionString;
+
       core.info('✅ Prisma database initialized successfully');
       return {
         connectionString: this.config.connectionString,
-        directUrl: this.config.directUrl,
+        directUrl: resolvedDirectUrl,
       };
     } catch (error) {
       core.error(`Failed to initialize Prisma database: ${error}`);
@@ -42,13 +44,13 @@ export class PrismaSetup {
   /**
    * Generate Prisma Client and push schema to database
    */
-  private async generatePrismaClient(connectionString: string, directUrl: string): Promise<void> {
+  private async generatePrismaClient(connectionString: string, directUrl?: string): Promise<void> {
     try {
       core.info('📦 Generating Prisma Client...');
 
       // Set environment variables for Prisma
       process.env.DATABASE_URL = connectionString;
-      process.env.DIRECT_DATABASE_URL = directUrl;
+      process.env.DIRECT_DATABASE_URL = directUrl || connectionString;
 
       // Run prisma generate
       const prismaDir = path.join(__dirname, 'prisma');

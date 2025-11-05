@@ -19,6 +19,14 @@ inputs:
     description: 'Enable Prisma Postgres storage for unlimited review history (optional)'
     required: false
     default: 'false'
+  database-url:
+    description: 'Prisma Postgres or Postgres connection string (maps to DATABASE_URL)'
+    required: false
+    default: ''
+  direct-database-url:
+    description: 'Direct Postgres connection string for migrations (maps to DIRECT_DATABASE_URL)'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -59,6 +67,8 @@ runs:
         INPUT_CONTINUE_ORG: ${{ inputs.continue-org }}
         INPUT_CONTINUE_CONFIG: ${{ inputs.continue-config }}
         INPUT_ENABLE_PRISMA_STORAGE: ${{ inputs.enable-prisma-storage }}
+        DATABASE_URL: ${{ inputs.database-url }}
+        DIRECT_DATABASE_URL: ${{ inputs.direct-database-url }}
       run: |
         echo "Running CodeBunny Review..."
         npx tsx index.ts
