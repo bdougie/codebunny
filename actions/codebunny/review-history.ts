@@ -113,7 +113,7 @@ export async function uploadReviewSnapshot(snapshot: ReviewSnapshot): Promise<bo
     // Clean up temp file
     await fs.unlink(artifactPath).catch(() => {});
     
-    return true;
+    return uploadResponse.id !== undefined;
   } catch (error) {
     core.warning(`Failed to upload review snapshot: ${error}`);
     // Don't fail the action if artifact upload fails
@@ -149,12 +149,19 @@ export async function downloadPreviousReviews(
       const files = await fs.readdir(downloadDir);
       
       for (const file of files) {
+        // Validate file is JSON before processing
         if (file.startsWith(artifactPattern) && file.endsWith('.json')) {
           const filePath = path.join(downloadDir, file);
           try {
             const content = await fs.readFile(filePath, 'utf-8');
+            // Validate JSON structure before parsing
             const snapshot = JSON.parse(content) as ReviewSnapshot;
-            snapshots.push(snapshot);
+            // Validate required fields exist
+            if (snapshot.timestamp && snapshot.prNumber && snapshot.reviewState) {
+              snapshots.push(snapshot);
+            } else {
+              core.warning(`Artifact ${file} is missing required fields`);
+            }
           } catch (error) {
             core.warning(`Failed to parse artifact ${file}: ${error}`);
           }
@@ -299,8 +306,9 @@ export async function saveReviewSummary(history: ReviewHistory): Promise<void> {
     const filepath = path.join(reviewsDir, filename);
 
     const markdown = generateReviewSummaryMarkdown(history);
+    
+    // Always write the file to ensure updates are saved
     await fs.writeFile(filepath, markdown, 'utf-8');
-
     core.info(`✅ Saved review summary to ${filepath}`);
   } catch (error) {
     core.warning(`Failed to save review summary: ${error}`);
