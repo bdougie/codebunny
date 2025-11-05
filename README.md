@@ -18,15 +18,16 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 
 ## Features
 
-✅ **Automated AI Reviews** - Reviews are triggered automatically on PR creation and updates  
-✅ **Codebase Pattern Analysis** - Understands your project's conventions and architecture  
-✅ **Custom Rules** - Define project-specific review guidelines  
-✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions  
-✅ **Review History Tracking** - Persistent review summaries in `.contributor/reviews/`  
-✅ **Approval State Monitoring** - Track how often PRs go in/out of approval  
-✅ **Sticky Comments** - Updates existing review comments within 1 hour to reduce PR noise  
-✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
-✅ **Bring Your Own Key** - Use Continue's Hub or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
+✅ **Automated AI Reviews** - Reviews are triggered automatically on PR creation and updates
+✅ **Codebase Pattern Analysis** - Understands your project's conventions and architecture
+✅ **Custom Rules** - Define project-specific review guidelines
+✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions
+✅ **Sticky Comments** - Updates existing review comments within 1 hour to reduce PR noise
+✅ **Review History Tracking** - Persistent review summaries in `.contributor/reviews/`
+✅ **Approval State Monitoring** - Track how often PRs go in/out of approval
+✅ **Optional Prisma Storage** - Unlimited review history with Postgres backend
+✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo
+✅ **Bring Your Own Key** - Use Continue's Hub or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control
 
 ## Installation
 
@@ -376,6 +377,107 @@ CodeBunny maintains a historical record of all reviews for continuous learning:
 5. @codebunny mentions are logged with timestamps
 
 View your review summaries in `.contributor/reviews/` to see how your PRs evolved!
+
+### Prisma Postgres Storage (Optional)
+
+By default, CodeBunny stores review metrics in a local file (`.continue/review-metrics.json`) with a 100-review limit. For unlimited history and advanced analytics, you can optionally enable Prisma Postgres storage.
+
+#### Benefits
+
+- **Unlimited Review History** - No 100-review cap
+- **Team Analytics** - Track code quality trends across your organization
+- **Approval Tracking** - Monitor approval state transitions over time
+- **Cross-PR Analysis** - Identify patterns across all pull requests
+- **Serverless-Optimized** - Built-in connection pooling for GitHub Actions
+
+#### Setup with Prisma Platform
+
+**Step 1: Get Your Database Connection Strings**
+
+Option A - Use an existing Postgres database:
+1. Set up environment variables in your workflow:
+   ```yaml
+   env:
+     DATABASE_URL: ${{ secrets.DATABASE_URL }}
+     DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+   ```
+
+Option B - Use Prisma Platform (coming soon):
+1. Create account at [prisma.io/platform](https://www.prisma.io/data-platform)
+2. Create a new Postgres database
+3. Get your Prisma API key from the dashboard
+
+**Step 2: Configure Your Workflow**
+
+Add Prisma storage inputs to your CodeBunny workflow:
+
+```yaml
+- name: CodeBunny Review
+  uses: bdougie/codebunny/actions/codebunny@main
+  with:
+    continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
+    continue-org: ${{ vars.CONTINUE_ORG }}
+    continue-config: ${{ vars.CONTINUE_CONFIG }}
+    # Enable Prisma storage
+    enable-prisma-storage: 'true'
+  env:
+    # Provide database connection strings
+    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+```
+
+**Step 3: Add Repository Secrets**
+
+Add to Settings → Secrets and variables → Actions:
+- `DATABASE_URL` - Pooled connection string for serverless
+- `DIRECT_DATABASE_URL` - Direct connection string for migrations
+
+#### Storage Modes
+
+**File Storage (Default)**:
+- Stores in `.continue/review-metrics.json`
+- 100-review limit
+- Works immediately, no setup required
+- Good for small teams and personal projects
+
+**Prisma Storage (Opt-In)**:
+- Unlimited review history
+- Stores in Postgres database
+- Requires database setup
+- Advanced analytics capabilities
+- Automatic approval transition tracking
+
+#### Graceful Fallback
+
+If Prisma storage is enabled but fails to connect:
+- CodeBunny automatically falls back to file storage
+- Review process continues without interruption
+- Warning is logged for debugging
+
+#### Example Analytics Queries
+
+With Prisma storage enabled, you can query review data directly:
+
+```sql
+-- Get approval state transitions for a PR
+SELECT * FROM "ApprovalTransition"
+WHERE repository = 'owner/repo' AND "prNumber" = 123
+ORDER BY timestamp ASC;
+
+-- Team code quality trend (last 30 days)
+SELECT "projectType", AVG("issuesHigh"), AVG("issuesMedium"), AVG("issuesLow")
+FROM "ReviewSnapshot"
+WHERE repository = 'owner/repo'
+  AND timestamp > NOW() - INTERVAL '30 days'
+GROUP BY "projectType";
+
+-- Most common review states
+SELECT "reviewState", COUNT(*)
+FROM "ReviewSnapshot"
+WHERE repository = 'owner/repo'
+GROUP BY "reviewState"
+ORDER BY COUNT(*) DESC;
+```
 
 ## Troubleshooting
 

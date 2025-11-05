@@ -8,9 +8,8 @@ import { glob } from 'glob';
 import { getAuthenticatedOctokit } from './github-app-auth';
 import { analyzeCodebasePatterns } from './codebase-analyzer';
 import { generateEnhancedPrompt } from './enhanced-prompt-generator';
-import { ReviewMetricsTracker, parseReviewMetrics, extractProjectType } from './review-metrics';
+import { parseReviewMetrics, extractProjectType } from './review-metrics';
 import {
-  ReviewSnapshot,
   ReviewHistory,
   extractReviewState,
   uploadReviewSnapshot,
@@ -18,6 +17,10 @@ import {
   buildReviewHistory,
   saveReviewSummary,
 } from './review-history';
+import { IReviewStorage, ReviewSnapshot } from './storage/storage-interface';
+import { FileStorage } from './storage/file-storage';
+import { PrismaStorage } from './storage/prisma-storage';
+import { PrismaSetup } from './prisma-setup';
 
 interface Rule {
   file: string;
@@ -635,7 +638,7 @@ async function postEnhancedReview(
   repo: string,
   prNumber: number,
   review: string,
-  metricsTracker: ReviewMetricsTracker,
+  storage: IReviewStorage,
   isProgress: boolean = false,
   updateCommentId?: number
 ): Promise<number | undefined> {
@@ -725,6 +728,53 @@ function extractCommand(comment: string): string | undefined {
 }
 
 /**
+ * Create storage provider based on configuration
+ * Returns PrismaStorage if enabled, otherwise FileStorage
+ */
+async function createStorageProvider(
+  enablePrismaStorage: string,
+  prismaApiKey?: string,
+  prismaDatabaseId?: string
+): Promise<IReviewStorage> {
+  try {
+    // Validate Prisma configuration
+    const prismaConfig = PrismaSetup.validateConfig(
+      enablePrismaStorage,
+      prismaApiKey,
+      prismaDatabaseId,
+      process.env.DATABASE_URL,
+      process.env.DIRECT_DATABASE_URL
+    );
+
+    // If Prisma is enabled, initialize and return PrismaStorage
+    if (prismaConfig) {
+      core.info('🔧 Initializing Prisma storage...');
+
+      try {
+        const prismaSetup = new PrismaSetup(prismaConfig);
+        const { connectionString, directUrl } = await prismaSetup.initialize();
+
+        const prismaStorage = new PrismaStorage(connectionString, directUrl);
+        core.info('✅ Prisma storage initialized successfully');
+        return prismaStorage;
+      } catch (error) {
+        core.warning(`Failed to initialize Prisma storage: ${error}`);
+        core.warning('⚠️  Falling back to file-based storage');
+        return new FileStorage();
+      }
+    }
+
+    // Default to file storage
+    core.info('📁 Using file-based storage (default)');
+    return new FileStorage();
+  } catch (error) {
+    core.warning(`Error creating storage provider: ${error}`);
+    core.warning('⚠️  Falling back to file-based storage');
+    return new FileStorage();
+  }
+}
+
+/**
  * Main enhanced action entry point
  */
 async function run(): Promise<void> {
@@ -749,6 +799,11 @@ async function run(): Promise<void> {
     const continueOrg =
       process.env.INPUT_CONTINUE_ORG || core.getInput('continue-org', { required: true });
 
+    // Prisma storage inputs (optional)
+    const enablePrismaStorage = core.getInput('enable-prisma-storage') || 'false';
+    const prismaApiKey = core.getInput('prisma-api-key') || undefined;
+    const prismaDatabaseId = core.getInput('prisma-database-id') || undefined;
+
     // Validate inputs
     if (!githubToken) {
       core.error('GitHub token is missing');
@@ -771,8 +826,8 @@ async function run(): Promise<void> {
     core.info(`Event Action: ${context.payload.action || 'N/A'}`);
     core.info(`Continue Config: ${continueConfig}`);
 
-    // Initialize metrics tracker
-    const metricsTracker = new ReviewMetricsTracker();
+    // Initialize storage provider (Prisma or File-based)
+    const storage = await createStorageProvider(enablePrismaStorage, prismaApiKey, prismaDatabaseId);
 
     // Initialize GitHub client early for reactions
     core.info('Initializing GitHub client...');
@@ -908,7 +963,7 @@ async function run(): Promise<void> {
       repo,
       prNumber,
       "🔄 **Review in Progress**\n\n✨ Analyzing codebase patterns and conventions...\n📊 Generating contextual insights...\n🎯 Preparing strategic feedback...\n\n*This review considers your project's specific patterns and architecture.*",
-      metricsTracker,
+      storage,
       true
     );
 
@@ -924,26 +979,37 @@ async function run(): Promise<void> {
     // Parse review metrics
     const reviewAnalysis = parseReviewMetrics(review);
 
-    // Record metrics
-    const reviewMetrics = {
+    // Create unified review snapshot with all required fields
+    core.info('Creating unified review snapshot...');
+    const reviewSnapshot: ReviewSnapshot = {
       timestamp: new Date().toISOString(),
       repository: `${owner}/${repo}`,
       prNumber: pr.number,
+      prTitle: pr.title,
       prAuthor: pr.user?.login || 'unknown',
       filesChanged: files.length,
       reviewerId: continueConfig,
+      reviewState: extractReviewState(review),
+      reviewText: review,
+      codebunnyMentioned: !!command,
+      commentId: progressCommentId,
       metrics: {
-        ...metrics,
+        promptLength: metrics.promptLength,
+        responseLength: metrics.responseLength,
+        processingTime: metrics.processingTime,
+        rulesApplied: metrics.rulesApplied,
+        patternsDetected: metrics.patternsDetected,
         issuesFound: reviewAnalysis.issuesFound,
       },
       context: {
         hasCustomCommand: !!command,
-        projectType: 'Unknown', // Will be updated by metrics tracker
+        projectType: 'Unknown', // Could be enhanced with project type detection
         mainLanguages: files.map((f) => path.extname(f.filename)).filter(Boolean),
       },
     };
 
-    await metricsTracker.recordReviewMetrics(reviewMetrics);
+    // Record review snapshot to storage (Prisma or file-based)
+    await storage.recordReviewMetrics(reviewSnapshot);
 
     // Post final enhanced review
     core.info('Posting final enhanced review...');
@@ -953,30 +1019,10 @@ async function run(): Promise<void> {
       repo,
       prNumber,
       review,
-      metricsTracker,
+      storage,
       false,
       progressCommentId
     );
-
-    // Create and upload review snapshot for historical tracking
-    core.info('Creating review snapshot for historical tracking...');
-    const reviewSnapshot: ReviewSnapshot = {
-      timestamp: new Date().toISOString(),
-      prNumber: pr.number,
-      prTitle: pr.title,
-      prAuthor: pr.user?.login || 'unknown',
-      filesChanged: files.length,
-      reviewState: extractReviewState(review),
-      reviewText: review,
-      metrics: {
-        processingTime: metrics.processingTime,
-        issuesFound: reviewAnalysis.issuesFound,
-        rulesApplied: metrics.rulesApplied,
-        patternsDetected: metrics.patternsDetected,
-      },
-      codebunnyMentioned: !!command,
-      commentId: progressCommentId,
-    };
 
     // Upload snapshot as artifact
     core.info('Uploading review snapshot as artifact...');

@@ -15,6 +15,16 @@ inputs:
   continue-config:
     description: 'Continue assistant path (format: username/assistant-name)'
     required: true
+  enable-prisma-storage:
+    description: 'Enable Prisma Postgres storage for unlimited review history (optional)'
+    required: false
+    default: 'false'
+  prisma-api-key:
+    description: 'Prisma Platform API key for auto-setup (required if enable-prisma-storage is true and DATABASE_URL is not set)'
+    required: false
+  prisma-database-id:
+    description: 'Prisma database ID (optional, auto-created if not provided)'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -39,8 +49,8 @@ runs:
       run: |
         echo "Installing action dependencies..."
         npm init -y
-        npm install @actions/core @actions/github @actions/exec js-yaml glob @octokit/rest
-        npm install --save-dev @types/js-yaml @types/node typescript tsx
+        npm install @actions/core @actions/github @actions/exec @actions/artifact js-yaml glob @octokit/rest @prisma/client @prisma/adapter-neon
+        npm install --save-dev @types/js-yaml @types/node typescript tsx prisma
 
     - name: Run CodeBunny Review
       shell: bash
@@ -54,6 +64,9 @@ runs:
         INPUT_CONTINUE_API_KEY: ${{ inputs.continue-api-key }}
         INPUT_CONTINUE_ORG: ${{ inputs.continue-org }}
         INPUT_CONTINUE_CONFIG: ${{ inputs.continue-config }}
+        INPUT_ENABLE_PRISMA_STORAGE: ${{ inputs.enable-prisma-storage }}
+        INPUT_PRISMA_API_KEY: ${{ inputs.prisma-api-key }}
+        INPUT_PRISMA_DATABASE_ID: ${{ inputs.prisma-database-id }}
       run: |
         echo "Running CodeBunny Review..."
         npx tsx index.ts
