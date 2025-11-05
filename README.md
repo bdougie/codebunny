@@ -22,7 +22,7 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 ✅ **Codebase Pattern Analysis** - Understands your project's conventions and architecture  
 ✅ **Custom Rules** - Define project-specific review guidelines  
 ✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions  
-✅ **Sticky Progress Comments** - Single updating comment instead of spam  
+✅ **Sticky Comments** - Updates existing review comments within 1 hour to reduce PR noise  
 ✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
 ✅ **Bring Your Own Key** - Use Continue's Hub or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
 
@@ -252,6 +252,28 @@ Comment on any PR to trigger focused reviews:
 @codebunny explain the architecture changes
 @codebunny suggest performance improvements
 ```
+
+## Sticky Comments
+
+CodeBunny implements "sticky comments" to keep your PR threads clean and organized:
+
+- **Within 1 hour**: New reviews update the existing comment
+- **After 1 hour**: Creates a fresh comment for the new review
+- **Benefits**: Reduces notification noise and keeps PR threads readable
+
+**How it works:**
+
+1. First review creates a new comment
+2. Subsequent reviews within 1 hour update the same comment
+3. After 1 hour, a new comment is created (useful for tracking review iterations)
+
+**Example timeline:**
+- `00:00` - Initial review posted (Comment #1)
+- `00:30` - Code updated, review updates Comment #1
+- `00:45` - Another update, still updates Comment #1
+- `01:15` - After 1 hour, creates Comment #2 (new review iteration)
+
+This approach balances keeping threads clean while preserving the history of significant review iterations.
 
 ## How It Works
 
