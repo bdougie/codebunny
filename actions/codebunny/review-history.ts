@@ -49,16 +49,16 @@ export function extractReviewState(reviewText: string): ReviewSnapshot['reviewSt
   if (recommendation.includes('❌')) return 'DONT_MERGE';
   if (recommendation.includes('🔄')) return 'MERGE_AFTER_CHANGES';
   
-  // Fallback to text matching
-  if (recommendation.match(/\bmerge\b/) && !recommendation.match(/don'?t|after/)) {
+  // Fallback to text matching (case-insensitive)
+  if (recommendation.match(/\bmerge\b/i) && !recommendation.match(/don'?t|after/i)) {
     return 'MERGE';
   }
   
-  if (recommendation.match(/don'?t\s+merge/)) {
+  if (recommendation.match(/don'?t\s+merge/i)) {
     return 'DONT_MERGE';
   }
   
-  if (recommendation.match(/merge\s+after\s+changes/)) {
+  if (recommendation.match(/merge\s+after\s+changes/i)) {
     return 'MERGE_AFTER_CHANGES';
   }
   
