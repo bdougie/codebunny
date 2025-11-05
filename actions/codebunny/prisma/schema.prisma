@@ -6,31 +6,31 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   // Enable connection pooling for serverless
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // Unified review snapshot model
 model ReviewSnapshot {
-  id               String   @id @default(cuid())
-  createdAt        DateTime @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   // Identification
-  timestamp        String
-  repository       String
-  prNumber         Int
-  prTitle          String
-  prAuthor         String
-  filesChanged     Int
-  reviewerId       String
+  timestamp    String
+  repository   String
+  prNumber     Int
+  prTitle      String
+  prAuthor     String
+  filesChanged Int
+  reviewerId   String
 
   // Review state tracking
-  reviewState      String   // MERGE | DONT_MERGE | MERGE_AFTER_CHANGES | UNKNOWN
-  reviewText       String   @db.Text
+  reviewState        String // MERGE | DONT_MERGE | MERGE_AFTER_CHANGES | UNKNOWN
+  reviewText         String  @db.Text
   codebunnyMentioned Boolean
-  commentId        Int?
+  commentId          Int?
 
   // Metrics
   promptLength     Int
@@ -62,15 +62,15 @@ model ReviewSnapshot {
 
 // Approval state transition tracking
 model ApprovalTransition {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
-  timestamp   String
-  repository  String
-  prNumber    Int
-  fromState   String
-  toState     String
-  reviewId    String
+  timestamp  String
+  repository String
+  prNumber   Int
+  fromState  String
+  toState    String
+  reviewId   String
 
   @@index([repository, prNumber])
   @@index([repository, timestamp])

@@ -402,21 +402,7 @@ Prisma storage requires a PostgreSQL database. Choose one of these options:
 2. **Create a new project** - This automatically creates a database
 3. **Get your connection strings** from the Neon dashboard:
    - **Pooled connection** (for DATABASE_URL) - Optimized for serverless with connection pooling
-   - **Direct connection** (for DIRECT_DATABASE_URL) - Direct connection for migrations
-4. **Run database migrations** to set up the schema:
-   ```bash
-   # Clone the repo and navigate to the action directory
-   git clone https://github.com/bdougie/codebunny.git
-   cd codebunny/actions/codebunny
-   npm install
-   
-   # Set your connection strings from Neon dashboard
-   export DATABASE_URL="postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
-   export DIRECT_DATABASE_URL="postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
-   
-   # Run Prisma migrations to create tables
-   npx prisma migrate deploy
-   ```
+   - **Direct connection** (for DIRECT_DATABASE_URL) - Direct connection for schema pushes
 
 **Why Neon?**
 - ✅ Free tier with 0.5 GB storage
@@ -425,14 +411,15 @@ Prisma storage requires a PostgreSQL database. Choose one of these options:
 - ✅ Instant database branching
 - ✅ No cold starts
 
-##### Option B: Prisma Postgres (Recommended for Production)
+**Note:** The database schema will be automatically created when CodeBunny runs for the first time. No manual migration steps required!
+
+##### Option B: Prisma Postgres
 
 [Prisma Postgres](https://www.prisma.io/data-platform) is a managed serverless database optimized for Prisma:
 
 1. **Create account** at [prisma.io/data-platform](https://www.prisma.io/data-platform)
 2. **Create a new Postgres project** in the Prisma dashboard
 3. **Get connection strings** from your project settings
-4. **Run migrations** (same commands as above)
 
 **Why Prisma Postgres?**
 - ✅ Optimized for Prisma Client
@@ -440,11 +427,9 @@ Prisma storage requires a PostgreSQL database. Choose one of these options:
 - ✅ Global database replication
 - ✅ Automatic backups and monitoring
 
-> **Note:** Full Prisma Platform API integration with auto-setup is coming soon. Currently, you'll need to create the database manually and provide connection strings.
-
 ##### Option C: Other PostgreSQL Providers
 
-You can use any PostgreSQL database:
+You can use any PostgreSQL database provider:
 
 - **Supabase** - [supabase.com](https://supabase.com) (free tier, built-in pooling)
 - **Railway** - [railway.app](https://railway.app) (simple deployment)
@@ -452,24 +437,21 @@ You can use any PostgreSQL database:
 - **AWS RDS** - For production workloads
 - **Self-hosted** - Your own PostgreSQL instance
 
-**Setup steps:**
-1. Create a PostgreSQL database with your chosen provider
-2. Get connection strings (pooled + direct if available)
-3. Run migrations using commands above
-
 **Connection String Format:**
 ```
 postgresql://username:password@host:5432/database?sslmode=require
 ```
 
-**Step 2: Add Repository Secrets**
+#### Configuration
+
+**Step 1: Add Repository Secrets**
 
 Add your connection strings to Settings → Secrets and variables → Actions:
 
 - `DATABASE_URL` - Pooled/serverless connection string (for runtime queries)
-- `DIRECT_DATABASE_URL` - Direct connection string (for migrations)
+- `DIRECT_DATABASE_URL` - Direct connection string (for schema pushes)
 
-**Step 3: Configure Your Workflow**
+**Step 2: Configure Your Workflow**
 
 Add Prisma storage to your CodeBunny workflow:
 
@@ -488,13 +470,18 @@ Add Prisma storage to your CodeBunny workflow:
     DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
 ```
 
-**Step 4: Test It**
+**Step 3: Test It**
 
 Create a test PR to verify Prisma storage is working. Check the action logs for:
 ```
 🔧 Initializing Prisma storage...
+📦 Generating Prisma Client...
+🔄 Pushing schema to database...
+✅ Database schema pushed successfully
 ✅ Prisma storage initialized successfully
 ```
+
+The database tables will be automatically created on the first run!
 
 #### Storage Modes
 

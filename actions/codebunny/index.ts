@@ -731,42 +731,41 @@ function extractCommand(comment: string): string | undefined {
  * Create storage provider based on configuration
  * Returns PrismaStorage if enabled, otherwise FileStorage
  */
-async function createStorageProvider(
-  enablePrismaStorage: string,
-  prismaApiKey?: string,
-  prismaDatabaseId?: string
-): Promise<IReviewStorage> {
+async function createStorageProvider(enablePrismaStorage: string): Promise<IReviewStorage> {
   try {
-    // Validate Prisma configuration
-    const prismaConfig = PrismaSetup.validateConfig(
-      enablePrismaStorage,
-      prismaApiKey,
-      prismaDatabaseId,
-      process.env.DATABASE_URL,
-      process.env.DIRECT_DATABASE_URL
-    );
-
-    // If Prisma is enabled, initialize and return PrismaStorage
-    if (prismaConfig) {
-      core.info('🔧 Initializing Prisma storage...');
-
-      try {
-        const prismaSetup = new PrismaSetup(prismaConfig);
-        const { connectionString, directUrl } = await prismaSetup.initialize();
-
-        const prismaStorage = new PrismaStorage(connectionString, directUrl);
-        core.info('✅ Prisma storage initialized successfully');
-        return prismaStorage;
-      } catch (error) {
-        core.warning(`Failed to initialize Prisma storage: ${error}`);
-        core.warning('⚠️  Falling back to file-based storage');
-        return new FileStorage();
-      }
+    // If Prisma is disabled, use file storage
+    if (enablePrismaStorage !== 'true') {
+      core.info('📁 Using file-based storage (default)');
+      return new FileStorage();
     }
 
-    // Default to file storage
-    core.info('📁 Using file-based storage (default)');
-    return new FileStorage();
+    // Validate required environment variables
+    if (!process.env.DATABASE_URL || !process.env.DIRECT_DATABASE_URL) {
+      core.warning(
+        'Prisma storage enabled but DATABASE_URL or DIRECT_DATABASE_URL not set. Falling back to file storage.'
+      );
+      return new FileStorage();
+    }
+
+    // Initialize Prisma storage
+    core.info('🔧 Initializing Prisma storage...');
+
+    try {
+      const prismaSetup = new PrismaSetup({
+        apiKey: '', // Not needed for manual connection strings
+        connectionString: process.env.DATABASE_URL,
+        directUrl: process.env.DIRECT_DATABASE_URL,
+      });
+      const { connectionString, directUrl } = await prismaSetup.initialize();
+
+      const prismaStorage = new PrismaStorage(connectionString, directUrl);
+      core.info('✅ Prisma storage initialized successfully');
+      return prismaStorage;
+    } catch (error) {
+      core.warning(`Failed to initialize Prisma storage: ${error}`);
+      core.warning('⚠️  Falling back to file-based storage');
+      return new FileStorage();
+    }
   } catch (error) {
     core.warning(`Error creating storage provider: ${error}`);
     core.warning('⚠️  Falling back to file-based storage');
@@ -801,8 +800,6 @@ async function run(): Promise<void> {
 
     // Prisma storage inputs (optional)
     const enablePrismaStorage = core.getInput('enable-prisma-storage') || 'false';
-    const prismaApiKey = core.getInput('prisma-api-key') || undefined;
-    const prismaDatabaseId = core.getInput('prisma-database-id') || undefined;
 
     // Validate inputs
     if (!githubToken) {
@@ -827,7 +824,7 @@ async function run(): Promise<void> {
     core.info(`Continue Config: ${continueConfig}`);
 
     // Initialize storage provider (Prisma or File-based)
-    const storage = await createStorageProvider(enablePrismaStorage, prismaApiKey, prismaDatabaseId);
+    const storage = await createStorageProvider(enablePrismaStorage);
 
     // Initialize GitHub client early for reactions
     core.info('Initializing GitHub client...');
