@@ -394,33 +394,59 @@ By default, CodeBunny stores review metrics in a local file (`.continue/review-m
 
 Prisma storage requires a PostgreSQL database. Choose one of these options:
 
-##### Option A: Quick Setup with Neon (Recommended)
+##### Option A: Neon Serverless Postgres (Recommended)
 
-[Neon](https://neon.tech) provides a free serverless Postgres database, perfect for CodeBunny:
+[Neon](https://neon.tech) provides a free serverless Postgres database with automatic scaling and connection pooling:
 
 1. **Create a Neon account** at [neon.tech](https://neon.tech)
 2. **Create a new project** - This automatically creates a database
 3. **Get your connection strings** from the Neon dashboard:
-   - **Connection pooling URL** (for DATABASE_URL) - Uses port 5432 with connection pooling
-   - **Direct connection URL** (for DIRECT_DATABASE_URL) - Direct connection without pooling
-4. **Run database migrations** locally to set up the schema:
+   - **Pooled connection** (for DATABASE_URL) - Optimized for serverless with connection pooling
+   - **Direct connection** (for DIRECT_DATABASE_URL) - Direct connection for migrations
+4. **Run database migrations** to set up the schema:
    ```bash
-   cd actions/codebunny
+   # Clone the repo and navigate to the action directory
+   git clone https://github.com/bdougie/codebunny.git
+   cd codebunny/actions/codebunny
    npm install
    
-   # Set your connection strings
-   export DATABASE_URL="postgresql://user:pass@host.neon.tech:5432/db?sslmode=require"
-   export DIRECT_DATABASE_URL="postgresql://user:pass@host.neon.tech:5432/db?sslmode=require"
+   # Set your connection strings from Neon dashboard
+   export DATABASE_URL="postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
+   export DIRECT_DATABASE_URL="postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
    
-   # Run Prisma migrations
+   # Run Prisma migrations to create tables
    npx prisma migrate deploy
    ```
 
-##### Option B: Other PostgreSQL Providers
+**Why Neon?**
+- ✅ Free tier with 0.5 GB storage
+- ✅ Serverless with automatic scaling
+- ✅ Built-in connection pooling (perfect for GitHub Actions)
+- ✅ Instant database branching
+- ✅ No cold starts
+
+##### Option B: Prisma Postgres (Recommended for Production)
+
+[Prisma Postgres](https://www.prisma.io/data-platform) is a managed serverless database optimized for Prisma:
+
+1. **Create account** at [prisma.io/data-platform](https://www.prisma.io/data-platform)
+2. **Create a new Postgres project** in the Prisma dashboard
+3. **Get connection strings** from your project settings
+4. **Run migrations** (same commands as above)
+
+**Why Prisma Postgres?**
+- ✅ Optimized for Prisma Client
+- ✅ Built-in Prisma Accelerate for caching and connection pooling
+- ✅ Global database replication
+- ✅ Automatic backups and monitoring
+
+> **Note:** Full Prisma Platform API integration with auto-setup is coming soon. Currently, you'll need to create the database manually and provide connection strings.
+
+##### Option C: Other PostgreSQL Providers
 
 You can use any PostgreSQL database:
 
-- **Supabase** - [supabase.com](https://supabase.com) (free tier available)
+- **Supabase** - [supabase.com](https://supabase.com) (free tier, built-in pooling)
 - **Railway** - [railway.app](https://railway.app) (simple deployment)
 - **Heroku Postgres** - [heroku.com/postgres](https://www.heroku.com/postgres)
 - **AWS RDS** - For production workloads
@@ -428,23 +454,24 @@ You can use any PostgreSQL database:
 
 **Setup steps:**
 1. Create a PostgreSQL database with your chosen provider
-2. Get both connection strings:
-   - Pooled connection for `DATABASE_URL` (if available)
-   - Direct connection for `DIRECT_DATABASE_URL`
-3. Run migrations locally (see commands above)
+2. Get connection strings (pooled + direct if available)
+3. Run migrations using commands above
 
 **Connection String Format:**
 ```
 postgresql://username:password@host:5432/database?sslmode=require
 ```
 
-##### Option C: Prisma Platform (Coming Soon)
+**Step 2: Add Repository Secrets**
 
-Prisma is developing a managed database platform with built-in tooling.
+Add your connection strings to Settings → Secrets and variables → Actions:
 
-**Step 2: Configure Your Workflow**
+- `DATABASE_URL` - Pooled/serverless connection string (for runtime queries)
+- `DIRECT_DATABASE_URL` - Direct connection string (for migrations)
 
-Add Prisma storage inputs to your CodeBunny workflow:
+**Step 3: Configure Your Workflow**
+
+Add Prisma storage to your CodeBunny workflow:
 
 ```yaml
 - name: CodeBunny Review
@@ -461,11 +488,13 @@ Add Prisma storage inputs to your CodeBunny workflow:
     DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
 ```
 
-**Step 3: Add Repository Secrets**
+**Step 4: Test It**
 
-Add to Settings → Secrets and variables → Actions:
-- `DATABASE_URL` - Pooled connection string for serverless
-- `DIRECT_DATABASE_URL` - Direct connection string for migrations
+Create a test PR to verify Prisma storage is working. Check the action logs for:
+```
+🔧 Initializing Prisma storage...
+✅ Prisma storage initialized successfully
+```
 
 #### Storage Modes
 
