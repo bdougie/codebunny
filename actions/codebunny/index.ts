@@ -618,6 +618,7 @@ Please address the user's specific request while also checking for any significa
 
 /**
  * Post or update review comment with enhanced formatting
+ * Implements sticky comments: updates existing comments within an hour, creates new ones after
  */
 async function postEnhancedReview(
   octokit: ReturnType<typeof github.getOctokit>,
@@ -631,6 +632,7 @@ async function postEnhancedReview(
 ): Promise<number | undefined> {
   const marker = '<!-- codebunny-review -->';
   const timestamp = new Date().toISOString();
+  const oneHour = 60 * 60 * 1000;
 
   core.info(`Posting enhanced review comment to PR #${prNumber} (isProgress: ${isProgress})`);
 
@@ -648,54 +650,55 @@ async function postEnhancedReview(
   body = `${marker}\n${body}`;
 
   try {
-    if (updateCommentId) {
+    // Always check for existing comments to implement sticky behavior
+    const { data: comments } = await octokit.rest.issues.listComments({
+      owner,
+      repo,
+      issue_number: prNumber,
+      per_page: 100,
+    });
+
+    const continueComments = comments
+      .filter((c) => c.body?.includes(marker))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    // Check if the most recent comment is within the sticky window (1 hour)
+    const existingComment = continueComments[0];
+    let shouldUpdate = false;
+    let targetCommentId = updateCommentId;
+
+    if (existingComment) {
+      const commentAge = Date.now() - new Date(existingComment.created_at).getTime();
+      
+      if (commentAge < oneHour) {
+        shouldUpdate = true;
+        // Use the existing comment ID if no specific ID was provided
+        targetCommentId = updateCommentId || existingComment.id;
+        core.info(`Found existing comment ${targetCommentId} within sticky window (${Math.round(commentAge / 1000)}s old)`);
+      } else {
+        core.info(`Existing comment ${existingComment.id} is outside sticky window (${Math.round(commentAge / 1000)}s old), creating new comment`);
+      }
+    }
+
+    if (shouldUpdate && targetCommentId) {
+      // Update the existing comment (sticky behavior)
       await octokit.rest.issues.updateComment({
         owner,
         repo,
-        comment_id: updateCommentId,
+        comment_id: targetCommentId,
         body,
       });
-      core.info(`Successfully updated enhanced comment ${updateCommentId}`);
-      return updateCommentId;
+      core.info(`✅ Updated sticky comment ${targetCommentId}`);
+      return targetCommentId;
     } else {
-      // Find existing comment and update/create as needed
-      const { data: comments } = await octokit.rest.issues.listComments({
-        owner,
-        repo,
-        issue_number: prNumber,
-        per_page: 100,
-      });
-
-      const continueComments = comments
-        .filter((c) => c.body?.includes(marker))
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      const existingComment = continueComments[0];
-
-      if (existingComment) {
-        const commentAge = Date.now() - new Date(existingComment.created_at).getTime();
-        const oneHour = 60 * 60 * 1000;
-
-        if (commentAge < oneHour) {
-          await octokit.rest.issues.updateComment({
-            owner,
-            repo,
-            comment_id: existingComment.id,
-            body,
-          });
-          core.info(`Successfully updated existing enhanced comment ${existingComment.id}`);
-          return existingComment.id;
-        }
-      }
-
-      // Create new comment
+      // Create new comment (outside sticky window or no existing comment)
       const { data: newComment } = await octokit.rest.issues.createComment({
         owner,
         repo,
         issue_number: prNumber,
         body,
       });
-      core.info(`Successfully created enhanced comment ${newComment.id}`);
+      core.info(`✅ Created new comment ${newComment.id}`);
       return newComment.id;
     }
   } catch (error) {

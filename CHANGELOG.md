@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CHANGELOG.md for tracking changes
 - Semantic versioning strategy
 
+### Fixed
+- Sticky comments now properly update existing comments within 1 hour window
+- Improved comment age tracking and logging for better debugging
+
 ## [1.0.0] - TBD
 
 ### Added
