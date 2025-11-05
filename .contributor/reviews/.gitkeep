@@ -1,0 +1,11 @@
+# Review Summaries
+
+This directory contains historical review summaries for pull requests.
+
+Each file (`pr-{number}.md`) tracks:
+- Chronological review history
+- Approval state transitions
+- @codebunny mention timestamps
+- Key metrics and patterns
+
+These files help CodeBunny learn from past reviews and provide increasingly intelligent feedback.

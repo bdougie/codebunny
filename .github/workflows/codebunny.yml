@@ -30,6 +30,15 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/pull/{0}/head', github.event.inputs.pr_number) || github.ref }}
 
+      # Download previous review artifacts for history tracking
+      - name: Download Previous Review Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: codebunny-review-pr-*
+          path: /tmp/review-artifacts
+          merge-multiple: true
+
       # Optional: Generate GitHub App token for enhanced permissions
       # If not used, will fallback to default GITHUB_TOKEN
       - name: Generate App Token
