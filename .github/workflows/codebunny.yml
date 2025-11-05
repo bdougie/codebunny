@@ -5,6 +5,12 @@ on:
     types: [opened, synchronize, ready_for_review]
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: true
+        type: number
 
 permissions:
   contents: read
@@ -16,11 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codebunny'))
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/pull/{0}/head', github.event.inputs.pr_number) || github.ref }}
 
       # Download previous review artifacts for history tracking
       - name: Download Previous Review Artifacts

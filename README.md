@@ -12,7 +12,7 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 
 **Own Your Review Data** - Unlike SaaS code review services, CodeBunny runs entirely in your GitHub Actions environment. Your code never leaves your repository, and all review data stays under your control.
 
-**Powered by Continue** - Built on [Continue](https://www.continue.dev/), the leading open-source AI code assistant. Use Continue's hosted service or [bring your own key (BYOK)](https://docs.continue.dev/guides/understanding-configs) for complete control.
+**Powered by Continue** - Built on [Continue](https://www.continue.dev/), the leading open-source AI code assistant. Use Continue's Hub service or [bring your own key (BYOK)](https://docs.continue.dev/guides/understanding-configs) for complete control.
 
 **Battle-Tested** - Inspired by existing code review tools and refined in the [contributor.info](https://github.com/bdougie/contributor.info) repository. Now generalized for any JavaScript/TypeScript project.
 
@@ -22,13 +22,35 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 ✅ **Codebase Pattern Analysis** - Understands your project's conventions and architecture  
 ✅ **Custom Rules** - Define project-specific review guidelines  
 ✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions  
-✅ **Sticky Progress Comments** - Single updating comment instead of spam  
 ✅ **Review History Tracking** - Persistent review summaries in `.contributor/reviews/`  
 ✅ **Approval State Monitoring** - Track how often PRs go in/out of approval  
+✅ **Sticky Comments** - Updates existing review comments within 1 hour to reduce PR noise  
 ✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
-✅ **Bring Your Own Key** - Use Continue's cloud or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
+✅ **Bring Your Own Key** - Use Continue's Hub or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
 
 ## Installation
+
+### Versioning
+
+CodeBunny follows [Semantic Versioning](https://semver.org/). We recommend pinning to a specific major version for stability:
+
+```yaml
+# Recommended: Pin to major version (gets latest features and fixes)
+- uses: bdougie/codebunny@v1
+
+# Pin to specific version (maximum stability)
+- uses: bdougie/codebunny@v1.0.0
+
+# Always latest (not recommended for production)
+- uses: bdougie/codebunny@main
+```
+
+**Version Types:**
+- **Major (v1, v2)** - May include breaking changes
+- **Minor (v1.1, v1.2)** - New features, backward compatible
+- **Patch (v1.0.1, v1.0.2)** - Bug fixes only
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ### Prerequisites
 
@@ -101,7 +123,7 @@ jobs:
           fetch-depth: 0
 
       - name: CodeBunny Review
-        uses: bdougie/codebunny/actions/codebunny@main
+        uses: bdougie/codebunny@v1
         with:
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
           continue-org: ${{ vars.CONTINUE_ORG }}
@@ -145,7 +167,7 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: CodeBunny Review
-        uses: bdougie/codebunny/actions/codebunny@main
+        uses: bdougie/codebunny@v1
         with:
           github-token: ${{ steps.app-token.outputs.token || github.token }}
           continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
@@ -232,6 +254,28 @@ Comment on any PR to trigger focused reviews:
 @codebunny explain the architecture changes
 @codebunny suggest performance improvements
 ```
+
+## Sticky Comments
+
+CodeBunny implements "sticky comments" to keep your PR threads clean and organized:
+
+- **Within 1 hour**: New reviews update the existing comment
+- **After 1 hour**: Creates a fresh comment for the new review
+- **Benefits**: Reduces notification noise and keeps PR threads readable
+
+**How it works:**
+
+1. First review creates a new comment
+2. Subsequent reviews within 1 hour update the same comment
+3. After 1 hour, a new comment is created (useful for tracking review iterations)
+
+**Example timeline:**
+- `00:00` - Initial review posted (Comment #1)
+- `00:30` - Code updated, review updates Comment #1
+- `00:45` - Another update, still updates Comment #1
+- `01:15` - After 1 hour, creates Comment #2 (new review iteration)
+
+This approach balances keeping threads clean while preserving the history of significant review iterations.
 
 ## How It Works
 
@@ -401,7 +445,7 @@ The action has been generalized to work with any JavaScript/TypeScript project, 
 
 ## Acknowledgments
 
-- Built with [Continue](https://www.continue.dev/) - The open-source AI code assistant
+- Built with [Continue](https://www.continue.dev/) - The Continuous AI platform
 - Tested and refined in [contributor.info](https://github.com/bdougie/contributor.info)
 - Inspired by code review tools like Danger, CodeRabbit, and GitHub Copilot
 - Thanks to the open source community
