@@ -390,22 +390,57 @@ By default, CodeBunny stores review metrics in a local file (`.continue/review-m
 - **Cross-PR Analysis** - Identify patterns across all pull requests
 - **Serverless-Optimized** - Built-in connection pooling for GitHub Actions
 
-#### Setup with Prisma Platform
+#### Setup Instructions
 
-**Step 1: Get Your Database Connection Strings**
+Prisma storage requires a PostgreSQL database. Choose one of these options:
 
-Option A - Use an existing Postgres database:
-1. Set up environment variables in your workflow:
-   ```yaml
-   env:
-     DATABASE_URL: ${{ secrets.DATABASE_URL }}
-     DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+##### Option A: Quick Setup with Neon (Recommended)
+
+[Neon](https://neon.tech) provides a free serverless Postgres database, perfect for CodeBunny:
+
+1. **Create a Neon account** at [neon.tech](https://neon.tech)
+2. **Create a new project** - This automatically creates a database
+3. **Get your connection strings** from the Neon dashboard:
+   - **Connection pooling URL** (for DATABASE_URL) - Uses port 5432 with connection pooling
+   - **Direct connection URL** (for DIRECT_DATABASE_URL) - Direct connection without pooling
+4. **Run database migrations** locally to set up the schema:
+   ```bash
+   cd actions/codebunny
+   npm install
+   
+   # Set your connection strings
+   export DATABASE_URL="postgresql://user:pass@host.neon.tech:5432/db?sslmode=require"
+   export DIRECT_DATABASE_URL="postgresql://user:pass@host.neon.tech:5432/db?sslmode=require"
+   
+   # Run Prisma migrations
+   npx prisma migrate deploy
    ```
 
-Option B - Use Prisma Platform (coming soon):
-1. Create account at [prisma.io/platform](https://www.prisma.io/data-platform)
-2. Create a new Postgres database
-3. Get your Prisma API key from the dashboard
+##### Option B: Other PostgreSQL Providers
+
+You can use any PostgreSQL database:
+
+- **Supabase** - [supabase.com](https://supabase.com) (free tier available)
+- **Railway** - [railway.app](https://railway.app) (simple deployment)
+- **Heroku Postgres** - [heroku.com/postgres](https://www.heroku.com/postgres)
+- **AWS RDS** - For production workloads
+- **Self-hosted** - Your own PostgreSQL instance
+
+**Setup steps:**
+1. Create a PostgreSQL database with your chosen provider
+2. Get both connection strings:
+   - Pooled connection for `DATABASE_URL` (if available)
+   - Direct connection for `DIRECT_DATABASE_URL`
+3. Run migrations locally (see commands above)
+
+**Connection String Format:**
+```
+postgresql://username:password@host:5432/database?sslmode=require
+```
+
+##### Option C: Prisma Platform (Coming Soon)
+
+Prisma is developing a managed database platform with built-in tooling.
 
 **Step 2: Configure Your Workflow**
 
