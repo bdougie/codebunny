@@ -988,6 +988,10 @@ async function run(): Promise<void> {
       ? [...previousSnapshots, reviewSnapshot]
       : previousSnapshots;
     
+    if (!uploadSuccessful) {
+      core.warning('Review snapshot upload failed - history may be incomplete');
+    }
+    
     if (allSnapshots.length > 0) {
       const history = buildReviewHistory(allSnapshots);
       if (history) {
