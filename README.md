@@ -18,15 +18,15 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 
 ## Features
 
-✅ **Automated AI Reviews** - Reviews are triggered automatically on PR creation and updates
-✅ **Codebase Pattern Analysis** - Understands your project's conventions and architecture
-✅ **Custom Rules** - Define project-specific review guidelines
-✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions
-✅ **Sticky Comments** - Updates existing review comments within 1 hour to reduce PR noise
-✅ **Review History Tracking** - Persistent review summaries in `.contributor/reviews/`
-✅ **Approval State Monitoring** - Track how often PRs go in/out of approval
-✅ **Optional Prisma Storage** - Unlimited review history with Postgres backend
-✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo
+✅ **Automated AI Reviews** - Reviews are triggered automatically on PR creation and updates  
+✅ **Codebase Pattern Analysis** - Understands your project's conventions and architecture  
+✅ **Custom Rules** - Define project-specific review guidelines  
+✅ **Interactive Commands** - Trigger focused reviews with `@codebunny` mentions  
+✅ **Review History Tracking** - Persistent review summaries in `.contributor/reviews/`  
+✅ **Approval State Monitoring** - Track how often PRs go in/out of approval  
+✅ **Sticky Comments** - Updates existing review comments within 1 hour to reduce PR noise  
+✅ **Optional Prisma Storage** - Unlimited review history with Postgres backend  
+✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
 ✅ **Bring Your Own Key** - Use Continue's Hub or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control
 
 ## Installation

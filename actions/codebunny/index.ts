@@ -1024,6 +1024,7 @@ async function run(): Promise<void> {
       progressCommentId
     );
 
+
     // Upload snapshot as artifact
     core.info('Uploading review snapshot as artifact...');
     const uploadSuccessful = await uploadReviewSnapshot(reviewSnapshot);
