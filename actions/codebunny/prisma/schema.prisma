@@ -1,0 +1,77 @@
+// Prisma schema for CodeBunny review history storage
+// Optimized for serverless environments with connection pooling
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Enable connection pooling for serverless
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// Unified review snapshot model
+model ReviewSnapshot {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Identification
+  timestamp    String
+  repository   String
+  prNumber     Int
+  prTitle      String
+  prAuthor     String
+  filesChanged Int
+  reviewerId   String
+
+  // Review state tracking
+  reviewState        String // MERGE | DONT_MERGE | MERGE_AFTER_CHANGES | UNKNOWN
+  reviewText         String  @db.Text
+  codebunnyMentioned Boolean
+  commentId          Int?
+
+  // Metrics
+  promptLength     Int
+  responseLength   Int
+  processingTime   Int
+  rulesApplied     Int
+  patternsDetected Int
+  issuesHigh       Int
+  issuesMedium     Int
+  issuesLow        Int
+
+  // Context
+  hasCustomCommand Boolean
+  projectType      String
+  mainLanguages    String[]
+
+  // Effectiveness tracking (optional)
+  implementedSuggestions Int?
+  totalSuggestions       Int?
+  developerFeedback      String? // positive | negative | neutral
+  followUpRequired       Boolean @default(false)
+
+  // Indexes for efficient queries
+  @@index([repository, prNumber])
+  @@index([repository, timestamp])
+  @@index([reviewState])
+  @@index([createdAt])
+}
+
+// Approval state transition tracking
+model ApprovalTransition {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  timestamp  String
+  repository String
+  prNumber   Int
+  fromState  String
+  toState    String
+  reviewId   String
+
+  @@index([repository, prNumber])
+  @@index([repository, timestamp])
+}
