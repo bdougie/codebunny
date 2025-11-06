@@ -28,6 +28,13 @@ coverage/
 *.log
 npm-debug.log*
 
-# Contributor reviews (optional - can be committed if desired)
-# Uncomment the line below to ignore review history files
-# .contributor/reviews/
+# Turso database (local SQLite file - should not be committed)
+.contributor/reviews.db
+.contributor/reviews.db-shm
+.contributor/reviews.db-wal
+
+# File storage backup (created during migration)
+.contributor/review-data.json.backup
+
+# Review summaries (markdown) CAN be committed for historical tracking
+# .contributor/reviews/*.md

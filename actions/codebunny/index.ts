@@ -20,6 +20,8 @@ import {
 } from './review-history';
 import { createStorage, getStorageDescription } from './storage-factory';
 import { IReviewStorage } from './storage/storage-interface';
+import { commitReviewData } from './review-committer';
+import { validateAgainstHistory, formatValidationInsights } from './historical-validator';
 
 interface Rule {
   file: string;
@@ -919,14 +921,31 @@ async function run(): Promise<void> {
       true
     );
 
+    // Validate against historical data
+    core.info('🔍 Validating against historical review data...');
+    const validationInsights = await validateAgainstHistory(
+      storage,
+      `${owner}/${repo}`,
+      {
+        number: pr.number,
+        title: pr.title,
+        author: pr.user?.login || 'unknown',
+        filesChanged: files.map(f => f.filename),
+      }
+    );
+
     // Generate enhanced review
     core.info('Generating enhanced review with codebase analysis...');
-    const { review, metrics } = await generateEnhancedReview(
+    const { review: baseReview, metrics } = await generateEnhancedReview(
       reviewContext,
       continueConfig,
       continueApiKey,
       githubToken
     );
+
+    // Append historical insights to review
+    const historicalContext = formatValidationInsights(validationInsights);
+    const review = baseReview + historicalContext;
 
     // Parse review metrics
     const reviewAnalysis = parseReviewMetrics(review);
@@ -1031,6 +1050,29 @@ async function run(): Promise<void> {
     // Upload snapshot as artifact (for backward compatibility)
     core.info('Uploading review snapshot as artifact for compatibility...');
     await uploadReviewSnapshot(reviewSnapshot);
+
+    // Commit review data to repository (if enabled)
+    const shouldCommit = 
+      process.env.INPUT_COMMIT_REVIEW_DATA !== 'false' && 
+      core.getInput('commit-review-data') !== 'false';
+    
+    if (shouldCommit) {
+      core.info('💾 Committing review data to repository...');
+      const committed = await commitReviewData({
+        repository: `${owner}/${repo}`,
+        prNumber: pr.number,
+        prTitle: pr.title,
+        skipIfNoChanges: true,
+      });
+
+      if (committed) {
+        core.info('✅ Review data committed successfully');
+      } else {
+        core.info('ℹ️ No review data changes to commit');
+      }
+    } else {
+      core.info('ℹ️ Review data commit is disabled');
+    }
 
     core.info('🎉 Enhanced review completed successfully');
   } catch (error) {
