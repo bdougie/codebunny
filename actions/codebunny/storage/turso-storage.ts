@@ -16,6 +16,7 @@
 import * as core from '@actions/core';
 import { createClient, Client } from '@libsql/client';
 import * as path from 'path';
+import * as fs from 'fs/promises';
 import {
   IReviewStorage,
   ReviewSnapshot,
@@ -42,6 +43,13 @@ export class TursoStorage implements IReviewStorage {
   async initialize(): Promise<void> {
     try {
       core.info('🔧 Initializing Turso storage...');
+
+      // Ensure local directory exists for file: URLs
+      if (this.config.url.startsWith('file:')) {
+        const filePath = this.config.url.replace(/^file:/, '');
+        const dir = path.dirname(filePath);
+        await fs.mkdir(dir, { recursive: true });
+      }
 
       // Create Turso client
       const clientConfig: any = {
