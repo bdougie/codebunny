@@ -213,25 +213,38 @@ export async function migrateFromFileStorage(storage: TursoStorage): Promise<voi
 
     let migratedCount = 0;
 
-    for (const [repository, data] of Object.entries(fileData)) {
-      const reviews = data.reviews || [];
-      
-      for (const review of reviews) {
-        try {
-          await storage.saveReview(repository, review);
+    // Perform migration in a single transaction for safety
+    await storage.runInTransaction(async () => {
+      for (const [repository, data] of Object.entries(fileData)) {
+        const reviews = (data as any).reviews || [];
+        for (const review of reviews) {
+          await storage.saveReview(repository, review as any);
           migratedCount++;
-        } catch (error) {
-          core.warning(`Failed to migrate review: ${error}`);
         }
       }
-    }
+    });
 
     core.info(`✅ Migrated ${migratedCount} reviews from file storage to Turso`);
 
-    // Backup old file storage
+    // Backup old file storage (copy then rename for safety)
     const backupPath = `${fileStoragePath}.backup`;
-    await fs.rename(fileStoragePath, backupPath);
-    core.info(`📦 Backed up file storage to ${backupPath}`);
+    await fs.copyFile(fileStoragePath, backupPath);
+    core.info(`📦 Copied file storage to backup at ${backupPath}`);
+
+    // Basic verification: ensure at least as many rows exist as migrated
+    try {
+      const stats = await storage.getStats(Object.keys(fileData)[0] || '');
+      if (stats.totalReviews >= migratedCount) {
+        // Safe to remove original file
+        await fs.rename(fileStoragePath, `${fileStoragePath}.migrated`);
+        core.info('🧹 Migration verified. Renamed original file to .migrated');
+      } else {
+        core.warning('Verification failed: not all reviews accounted for. Keeping original file.');
+      }
+    } catch (verifyErr) {
+      core.warning(`Verification error after migration: ${verifyErr}`);
+      // Keep original file if verification fails
+    }
 
   } catch (error) {
     core.warning(`Failed to migrate from file storage: ${error}`);

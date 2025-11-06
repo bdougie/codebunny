@@ -199,7 +199,7 @@ export class TursoStorage implements IReviewStorage {
         args: [repository, prNumber],
       });
 
-      return result.rows.map(row => this.rowToSnapshot(row));
+      return result.rows.map((row: any) => this.rowToSnapshot(row));
     } catch (error) {
       core.error(`Failed to get review history from Turso: ${error}`);
       return [];
@@ -252,7 +252,7 @@ export class TursoStorage implements IReviewStorage {
         args: [repository, prNumber],
       });
 
-      return result.rows.map(row => ({
+      return result.rows.map((row: any) => ({
         timestamp: row.timestamp as string,
         repository: row.repository as string,
         prNumber: row.prNumber as number,
@@ -339,7 +339,7 @@ export class TursoStorage implements IReviewStorage {
 
       const result = await this.client.execute({ sql, args });
 
-      return result.rows.map(row => this.rowToSnapshot(row));
+      return result.rows.map((row: any) => this.rowToSnapshot(row));
     } catch (error) {
       core.warning(`Failed to get all reviews from Turso: ${error}`);
       return [];
@@ -356,6 +356,29 @@ export class TursoStorage implements IReviewStorage {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Run a set of operations in a transaction for atomicity
+   */
+  async runInTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    if (!this.client) {
+      throw new Error('Turso storage not initialized');
+    }
+    // Use explicit BEGIN/COMMIT/ROLLBACK to avoid relying on client-specific APIs
+    await this.client.execute('BEGIN');
+    try {
+      const result = await fn();
+      await this.client.execute('COMMIT');
+      // If using embedded replica with sync, sync after commit
+      if (this.config.syncUrl && 'sync' in this.client) {
+        await (this.client as any).sync();
+      }
+      return result;
+    } catch (err) {
+      try { await this.client.execute('ROLLBACK'); } catch {}
+      throw err;
     }
   }
 

@@ -39,9 +39,9 @@ export async function commitReviewData(options: CommitOptions): Promise<boolean>
   try {
     core.info('📝 Checking for review data to commit...');
 
-    // Configure git
-    await exec.exec('git', ['config', 'user.name', 'CodeBunny']);
-    await exec.exec('git', ['config', 'user.email', 'codebunny@continue.dev']);
+    // Configure git (use --local to avoid modifying global config)
+    await exec.exec('git', ['config', '--local', 'user.name', 'CodeBunny']);
+    await exec.exec('git', ['config', '--local', 'user.email', 'codebunny@continue.dev']);
 
     // Add review data files
     const contributorDir = path.join(process.cwd(), '.contributor');
