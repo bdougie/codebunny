@@ -18,6 +18,8 @@ import {
   buildReviewHistory,
   saveReviewSummary,
 } from './review-history';
+import { createStorage, getStorageDescription } from './storage-factory';
+import { IReviewStorage } from './storage/storage-interface';
 
 interface Rule {
   file: string;
@@ -771,6 +773,11 @@ async function run(): Promise<void> {
     core.info(`Event Action: ${context.payload.action || 'N/A'}`);
     core.info(`Continue Config: ${continueConfig}`);
 
+    // Initialize storage (Turso or file-based)
+    core.info('🗄️ Initializing storage backend...');
+    const storage = await createStorage();
+    core.info(`Storage mode: ${getStorageDescription(storage)}`);
+
     // Initialize metrics tracker
     const metricsTracker = new ReviewMetricsTracker();
 
@@ -958,7 +965,7 @@ async function run(): Promise<void> {
       progressCommentId
     );
 
-    // Create and upload review snapshot for historical tracking
+    // Create and save review snapshot using storage backend
     core.info('Creating review snapshot for historical tracking...');
     const reviewSnapshot: ReviewSnapshot = {
       timestamp: new Date().toISOString(),
@@ -978,22 +985,36 @@ async function run(): Promise<void> {
       commentId: progressCommentId,
     };
 
-    // Upload snapshot as artifact
-    core.info('Uploading review snapshot as artifact...');
-    const uploadSuccessful = await uploadReviewSnapshot(reviewSnapshot);
-
-    // Download previous reviews and build history
-    core.info('Checking for previous review history...');
-    const previousSnapshots = await downloadPreviousReviews(pr.number);
-    
-    // Only include current snapshot in history if upload was successful
-    const allSnapshots = uploadSuccessful 
-      ? [...previousSnapshots, reviewSnapshot]
-      : previousSnapshots;
-    
-    if (!uploadSuccessful) {
-      core.warning('Review snapshot upload failed - history may be incomplete');
+    // Save review to storage backend
+    try {
+      await storage.saveReview(`${owner}/${repo}`, reviewSnapshot);
+      core.info('✅ Review snapshot saved to storage');
+    } catch (error) {
+      core.warning(`Failed to save review to storage: ${error}`);
     }
+
+    // Track approval transitions
+    const previousReviews = await storage.getReviewHistory(`${owner}/${repo}`, pr.number);
+    if (previousReviews.length > 0) {
+      const lastReview = previousReviews[previousReviews.length - 1];
+      const lastState = lastReview.reviewState;
+      const currentState = reviewSnapshot.reviewState;
+
+      if (lastState !== currentState) {
+        await storage.saveApprovalTransition({
+          timestamp: new Date().toISOString(),
+          repository: `${owner}/${repo}`,
+          prNumber: pr.number,
+          fromState: lastState,
+          toState: currentState,
+          triggerType: command ? 'MENTION' : 'REVIEW',
+        });
+        core.info(`🔄 Approval state changed: ${lastState} → ${currentState}`);
+      }
+    }
+
+    // Get all reviews for this PR and build history
+    const allSnapshots = await storage.getReviewHistory(`${owner}/${repo}`, pr.number);
     
     if (allSnapshots.length > 0) {
       const history = buildReviewHistory(allSnapshots);
@@ -1002,6 +1023,14 @@ async function run(): Promise<void> {
         await saveReviewSummary(history);
       }
     }
+
+    // Display storage stats
+    const stats = await storage.getStats(`${owner}/${repo}`);
+    core.info(`📊 Storage stats: ${stats.totalReviews} total reviews, ${(stats.approvalRate * 100).toFixed(1)}% approval rate`);
+
+    // Upload snapshot as artifact (for backward compatibility)
+    core.info('Uploading review snapshot as artifact for compatibility...');
+    await uploadReviewSnapshot(reviewSnapshot);
 
     core.info('🎉 Enhanced review completed successfully');
   } catch (error) {
