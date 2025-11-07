@@ -329,7 +329,8 @@ async function generateEnhancedReview(
       const cliPath = cliDetection.path;
 
       // Execute enhanced review with Continue CLI
-      const command = `${cliPath} --config ${continueConfig} -p @${tempFile} --allow Bash`;
+      // Add Write permission for Continue CLI to handle file operations
+      const command = `${cliPath} --config ${continueConfig} -p @${tempFile} --allow Bash --allow Write`;
 
       if (isDebugMode) {
         core.info(`Executing enhanced review: ${command}`);
@@ -573,7 +574,8 @@ Please address the user's specific request while also checking for any significa
     const cliPath = cliDetection.path;
 
     // Execute Continue CLI with the prompt
-    const command = `${cliPath} --config ${continueConfig} -p @${tempFile} --allow Bash`;
+    // Add Write permission for Continue CLI to handle file operations
+    const command = `${cliPath} --config ${continueConfig} -p @${tempFile} --allow Bash --allow Write`;
 
     const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
       exec(
