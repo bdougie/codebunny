@@ -25,6 +25,7 @@ CodeBunny is a GitHub Action that provides intelligent, context-aware code revie
 ✅ **Review History Tracking** - Persistent review summaries in `.contributor/reviews/`  
 ✅ **Approval State Monitoring** - Track how often PRs go in/out of approval  
 ✅ **Sticky Comments** - Updates existing review comments within 1 hour to reduce PR noise  
+✅ **Optional Turso Storage** - Unlimited review history with SQLite reliability (local or synced)  
 ✅ **Privacy-First** - Runs in your GitHub Actions, your code never leaves your repo  
 ✅ **Bring Your Own Key** - Use Continue's Hub or [BYOK](https://docs.continue.dev/guides/understanding-configs) for full control  
 
@@ -376,6 +377,144 @@ CodeBunny maintains a historical record of all reviews for continuous learning:
 5. @codebunny mentions are logged with timestamps
 
 View your review summaries in `.contributor/reviews/` to see how your PRs evolved!
+
+### Turso Storage (Optional)
+
+By default, CodeBunny stores review metrics in a local file (`.contributor/review-data.json`) with a 100-review limit. For unlimited history and advanced analytics, you can optionally enable Turso storage.
+
+**What is Turso?**
+
+Turso is a database service powered by [libSQL](https://github.com/tursodatabase/libsql) (SQLite for the edge). It offers:
+- 🗄️ **Unlimited review history** - No 100-review cap
+- 🚀 **SQLite reliability** - Battle-tested database engine
+- 📦 **Local-first** - Works offline, syncs when online (optional)
+- 💰 **Zero cost option** - Local-only mode requires no setup
+- 👥 **Team collaboration** - Optional cloud sync for team analytics
+- 🔐 **Privacy-first** - Data stored in `.contributor/reviews.db` (local mode)
+
+#### Quick Start: Local-Only Mode
+
+Zero setup required! Just enable Turso storage:
+
+```yaml
+- name: CodeBunny Review
+  uses: bdougie/codebunny@v1
+  with:
+    continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
+    continue-org: ${{ vars.CONTINUE_ORG }}
+    continue-config: ${{ vars.CONTINUE_CONFIG }}
+    enable-turso-storage: 'true'
+```
+
+CodeBunny will automatically create a local SQLite database at `.contributor/reviews.db` with unlimited storage.
+
+**Benefits:**
+- ✅ Unlimited review history
+- ✅ Zero cost
+- ✅ No cloud dependencies
+- ✅ SQLite reliability and performance
+- ✅ Full SQL query capabilities
+
+#### Advanced: Synced Mode (Team Collaboration)
+
+For team analytics and cross-repository insights, enable cloud sync:
+
+**Step 1: Set up Turso**
+
+```bash
+# Install Turso CLI
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# Create account
+turso auth signup
+
+# Create database
+turso db create codebunny-reviews
+
+# Get credentials
+turso db show codebunny-reviews --url
+turso db tokens create codebunny-reviews
+```
+
+**Step 2: Add GitHub Secrets**
+
+- `TURSO_DATABASE_URL`: Your database URL (e.g., `libsql://codebunny-reviews-[org].turso.io`)
+- `TURSO_AUTH_TOKEN`: Your auth token
+
+**Step 3: Enable in Workflow**
+
+```yaml
+- name: CodeBunny Review
+  uses: bdougie/codebunny@v1
+  with:
+    continue-api-key: ${{ secrets.CONTINUE_API_KEY }}
+    continue-org: ${{ vars.CONTINUE_ORG }}
+    continue-config: ${{ vars.CONTINUE_CONFIG }}
+    enable-turso-storage: 'true'
+  env:
+    TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+    TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+```
+
+**Benefits:**
+- ✅ All local-mode benefits
+- ✅ Automatic cloud sync
+- ✅ Team collaboration
+- ✅ Cross-repository analytics
+- ✅ Generous free tier (500 databases, 9 GB storage)
+
+#### Storage Comparison
+
+| Feature | File Storage | Turso Local | Turso Synced |
+|---------|--------------|-------------|---------------|
+| Review Limit | 100 reviews | ♾️ Unlimited | ♾️ Unlimited |
+| Cost | $0 | $0 | $0* |
+| Team Sync | ❌ No | ❌ No | ✅ Yes |
+| SQL Queries | ❌ No | ✅ Yes | ✅ Yes |
+| Cloud Backup | ❌ No | ❌ No | ✅ Yes |
+| Setup Required | None | None | Turso account |
+
+\* Free tier: 500 databases, 9 GB storage, unlimited requests
+
+#### Example Analytics Queries
+
+With Turso storage, you can run SQL queries for advanced analytics:
+
+```bash
+# Connect to your local database
+turso db shell file:.contributor/reviews.db
+
+# Get approval rate
+SELECT 
+  COUNT(CASE WHEN reviewState = 'MERGE' THEN 1 END) * 100.0 / COUNT(*) as approvalRate
+FROM ReviewSnapshot
+WHERE repository = 'owner/repo';
+
+# Find PRs with most reviews
+SELECT prNumber, prTitle, COUNT(*) as reviewCount
+FROM ReviewSnapshot
+WHERE repository = 'owner/repo'
+GROUP BY prNumber, prTitle
+ORDER BY reviewCount DESC
+LIMIT 5;
+
+# Track code quality trends
+SELECT 
+  strftime('%Y-%m', timestamp) as month,
+  AVG(issuesHigh) as avgHighIssues,
+  AVG(processingTime) as avgProcessingTime
+FROM ReviewSnapshot
+WHERE repository = 'owner/repo'
+GROUP BY month
+ORDER BY month DESC;
+```
+
+**📚 Full Documentation:** See [TURSO_SETUP.md](actions/codebunny/TURSO_SETUP.md) for:
+- Detailed setup instructions
+- Database schema reference
+- Advanced query examples
+- Migration guide
+- Troubleshooting tips
 
 ## Troubleshooting
 

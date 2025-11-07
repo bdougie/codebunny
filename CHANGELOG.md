@@ -8,9 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Turso Storage Support** - Optional unlimited review history with SQLite/libSQL
+  - Local-only mode (zero setup, stores in `.contributor/reviews.db`)
+  - Synced mode (embedded replica with Turso cloud sync)
+  - Storage abstraction layer with interface
+  - Automatic migration from file storage
+  - Full SQL query capabilities for analytics
+  - Approval transition tracking
+  - Storage factory pattern with graceful fallback
+- Storage interface (`storage/storage-interface.ts`)
+- File storage implementation (`storage/file-storage.ts`)
+- Turso storage implementation (`storage/turso-storage.ts`)
+- Turso setup utilities (`turso-setup.ts`)
+- Storage factory (`storage-factory.ts`)
+- Comprehensive Turso documentation (`TURSO_SETUP.md`)
+- `@libsql/client` dependency for Turso support
+- `enable-turso-storage` workflow input
 - Release workflow for automated versioning
 - CHANGELOG.md for tracking changes
 - Semantic versioning strategy
+
+### Changed
+- Review storage now uses abstraction layer
+- Approval transitions are now tracked in storage backend
+- Index.ts refactored to use storage factory pattern
 
 ### Fixed
 - Sticky comments now properly update existing comments within 1 hour window

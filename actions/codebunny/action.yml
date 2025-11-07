@@ -15,6 +15,14 @@ inputs:
   continue-config:
     description: 'Continue assistant path (format: username/assistant-name)'
     required: true
+  enable-turso-storage:
+    description: 'Enable Turso SQLite storage for unlimited review history (default: false)'
+    required: false
+    default: 'false'
+  commit-review-data:
+    description: 'Automatically commit review data to repository (default: true)'
+    required: false
+    default: 'true'
 runs:
   using: 'composite'
   steps:
@@ -39,7 +47,7 @@ runs:
       run: |
         echo "Installing action dependencies..."
         npm init -y
-        npm install @actions/core @actions/github @actions/exec js-yaml glob @octokit/rest
+        npm install @actions/core @actions/github @actions/exec js-yaml glob @octokit/rest @libsql/client
         npm install --save-dev @types/js-yaml @types/node typescript tsx
 
     - name: Run CodeBunny Review
@@ -54,6 +62,8 @@ runs:
         INPUT_CONTINUE_API_KEY: ${{ inputs.continue-api-key }}
         INPUT_CONTINUE_ORG: ${{ inputs.continue-org }}
         INPUT_CONTINUE_CONFIG: ${{ inputs.continue-config }}
+        INPUT_ENABLE_TURSO_STORAGE: ${{ inputs.enable-turso-storage }}
+        INPUT_COMMIT_REVIEW_DATA: ${{ inputs.commit-review-data }}
       run: |
         echo "Running CodeBunny Review..."
         npx tsx index.ts

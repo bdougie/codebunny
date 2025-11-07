@@ -18,6 +18,10 @@ import {
   buildReviewHistory,
   saveReviewSummary,
 } from './review-history';
+import { createStorage, getStorageDescription } from './storage-factory';
+import { IReviewStorage } from './storage/storage-interface';
+import { commitReviewData } from './review-committer';
+import { validateAgainstHistory, formatValidationInsights } from './historical-validator';
 
 interface Rule {
   file: string;
@@ -325,7 +329,8 @@ async function generateEnhancedReview(
       const cliPath = cliDetection.path;
 
       // Execute enhanced review with Continue CLI
-      const command = `${cliPath} --config ${continueConfig} -p @${tempFile} --allow Bash`;
+      // Add Write permission for Continue CLI to handle file operations
+      const command = `${cliPath} --config ${continueConfig} -p @${tempFile} --allow Bash --allow Write`;
 
       if (isDebugMode) {
         core.info(`Executing enhanced review: ${command}`);
@@ -569,7 +574,8 @@ Please address the user's specific request while also checking for any significa
     const cliPath = cliDetection.path;
 
     // Execute Continue CLI with the prompt
-    const command = `${cliPath} --config ${continueConfig} -p @${tempFile} --allow Bash`;
+    // Add Write permission for Continue CLI to handle file operations
+    const command = `${cliPath} --config ${continueConfig} -p @${tempFile} --allow Bash --allow Write`;
 
     const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
       exec(
@@ -771,6 +777,11 @@ async function run(): Promise<void> {
     core.info(`Event Action: ${context.payload.action || 'N/A'}`);
     core.info(`Continue Config: ${continueConfig}`);
 
+    // Initialize storage (Turso or file-based)
+    core.info('🗄️ Initializing storage backend...');
+    const storage = await createStorage();
+    core.info(`Storage mode: ${getStorageDescription(storage)}`);
+
     // Initialize metrics tracker
     const metricsTracker = new ReviewMetricsTracker();
 
@@ -912,14 +923,31 @@ async function run(): Promise<void> {
       true
     );
 
+    // Validate against historical data
+    core.info('🔍 Validating against historical review data...');
+    const validationInsights = await validateAgainstHistory(
+      storage,
+      `${owner}/${repo}`,
+      {
+        number: pr.number,
+        title: pr.title,
+        author: pr.user?.login || 'unknown',
+        filesChanged: files.map(f => f.filename),
+      }
+    );
+
     // Generate enhanced review
     core.info('Generating enhanced review with codebase analysis...');
-    const { review, metrics } = await generateEnhancedReview(
+    const { review: baseReview, metrics } = await generateEnhancedReview(
       reviewContext,
       continueConfig,
       continueApiKey,
       githubToken
     );
+
+    // Append historical insights to review
+    const historicalContext = formatValidationInsights(validationInsights);
+    const review = baseReview + historicalContext;
 
     // Parse review metrics
     const reviewAnalysis = parseReviewMetrics(review);
@@ -958,7 +986,7 @@ async function run(): Promise<void> {
       progressCommentId
     );
 
-    // Create and upload review snapshot for historical tracking
+    // Create and save review snapshot using storage backend
     core.info('Creating review snapshot for historical tracking...');
     const reviewSnapshot: ReviewSnapshot = {
       timestamp: new Date().toISOString(),
@@ -978,22 +1006,36 @@ async function run(): Promise<void> {
       commentId: progressCommentId,
     };
 
-    // Upload snapshot as artifact
-    core.info('Uploading review snapshot as artifact...');
-    const uploadSuccessful = await uploadReviewSnapshot(reviewSnapshot);
-
-    // Download previous reviews and build history
-    core.info('Checking for previous review history...');
-    const previousSnapshots = await downloadPreviousReviews(pr.number);
-    
-    // Only include current snapshot in history if upload was successful
-    const allSnapshots = uploadSuccessful 
-      ? [...previousSnapshots, reviewSnapshot]
-      : previousSnapshots;
-    
-    if (!uploadSuccessful) {
-      core.warning('Review snapshot upload failed - history may be incomplete');
+    // Save review to storage backend
+    try {
+      await storage.saveReview(`${owner}/${repo}`, reviewSnapshot);
+      core.info('✅ Review snapshot saved to storage');
+    } catch (error) {
+      core.warning(`Failed to save review to storage: ${error}`);
     }
+
+    // Track approval transitions
+    const previousReviews = await storage.getReviewHistory(`${owner}/${repo}`, pr.number);
+    if (previousReviews.length > 0) {
+      const lastReview = previousReviews[previousReviews.length - 1];
+      const lastState = lastReview.reviewState;
+      const currentState = reviewSnapshot.reviewState;
+
+      if (lastState !== currentState) {
+        await storage.saveApprovalTransition({
+          timestamp: new Date().toISOString(),
+          repository: `${owner}/${repo}`,
+          prNumber: pr.number,
+          fromState: lastState,
+          toState: currentState,
+          triggerType: command ? 'MENTION' : 'REVIEW',
+        });
+        core.info(`🔄 Approval state changed: ${lastState} → ${currentState}`);
+      }
+    }
+
+    // Get all reviews for this PR and build history
+    const allSnapshots = await storage.getReviewHistory(`${owner}/${repo}`, pr.number);
     
     if (allSnapshots.length > 0) {
       const history = buildReviewHistory(allSnapshots);
@@ -1001,6 +1043,37 @@ async function run(): Promise<void> {
         core.info(`Building review history with ${allSnapshots.length} snapshots...`);
         await saveReviewSummary(history);
       }
+    }
+
+    // Display storage stats
+    const stats = await storage.getStats(`${owner}/${repo}`);
+    core.info(`📊 Storage stats: ${stats.totalReviews} total reviews, ${(stats.approvalRate * 100).toFixed(1)}% approval rate`);
+
+    // Upload snapshot as artifact (for backward compatibility)
+    core.info('Uploading review snapshot as artifact for compatibility...');
+    await uploadReviewSnapshot(reviewSnapshot);
+
+    // Commit review data to repository (if enabled)
+    const shouldCommit = 
+      process.env.INPUT_COMMIT_REVIEW_DATA !== 'false' && 
+      core.getInput('commit-review-data') !== 'false';
+    
+    if (shouldCommit) {
+      core.info('💾 Committing review data to repository...');
+      const committed = await commitReviewData({
+        repository: `${owner}/${repo}`,
+        prNumber: pr.number,
+        prTitle: pr.title,
+        skipIfNoChanges: true,
+      });
+
+      if (committed) {
+        core.info('✅ Review data committed successfully');
+      } else {
+        core.info('ℹ️ No review data changes to commit');
+      }
+    } else {
+      core.info('ℹ️ Review data commit is disabled');
     }
 
     core.info('🎉 Enhanced review completed successfully');
