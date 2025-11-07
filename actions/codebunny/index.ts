@@ -958,49 +958,63 @@ async function run(): Promise<void> {
       progressCommentId
     );
 
+    core.info('✅ Review posted successfully');
+
     // Create and upload review snapshot for historical tracking
-    core.info('Creating review snapshot for historical tracking...');
-    const reviewSnapshot: ReviewSnapshot = {
-      timestamp: new Date().toISOString(),
-      prNumber: pr.number,
-      prTitle: pr.title,
-      prAuthor: pr.user?.login || 'unknown',
-      filesChanged: files.length,
-      reviewState: extractReviewState(review),
-      reviewText: review,
-      metrics: {
-        processingTime: metrics.processingTime,
-        issuesFound: reviewAnalysis.issuesFound,
-        rulesApplied: metrics.rulesApplied,
-        patternsDetected: metrics.patternsDetected,
-      },
-      codebunnyMentioned: !!command,
-      commentId: progressCommentId,
-    };
+    // Wrap in try-catch to prevent errors from affecting the main review flow
+    try {
+      core.info('Creating review snapshot for historical tracking...');
+      const reviewSnapshot: ReviewSnapshot = {
+        timestamp: new Date().toISOString(),
+        prNumber: pr.number,
+        prTitle: pr.title,
+        prAuthor: pr.user?.login || 'unknown',
+        filesChanged: files.length,
+        reviewState: extractReviewState(review),
+        reviewText: review,
+        metrics: {
+          processingTime: metrics.processingTime,
+          issuesFound: reviewAnalysis.issuesFound,
+          rulesApplied: metrics.rulesApplied,
+          patternsDetected: metrics.patternsDetected,
+        },
+        codebunnyMentioned: !!command,
+        commentId: progressCommentId,
+      };
 
-    // Upload snapshot as artifact
-    core.info('Uploading review snapshot as artifact...');
-    const uploadSuccessful = await uploadReviewSnapshot(reviewSnapshot);
+      // Upload snapshot as artifact
+      core.info('Uploading review snapshot as artifact...');
+      const uploadSuccessful = await uploadReviewSnapshot(reviewSnapshot);
 
-    // Download previous reviews and build history
-    core.info('Checking for previous review history...');
-    const previousSnapshots = await downloadPreviousReviews(pr.number);
-    
-    // Only include current snapshot in history if upload was successful
-    const allSnapshots = uploadSuccessful 
-      ? [...previousSnapshots, reviewSnapshot]
-      : previousSnapshots;
-    
-    if (!uploadSuccessful) {
-      core.warning('Review snapshot upload failed - history may be incomplete');
-    }
-    
-    if (allSnapshots.length > 0) {
-      const history = buildReviewHistory(allSnapshots);
-      if (history) {
-        core.info(`Building review history with ${allSnapshots.length} snapshots...`);
-        await saveReviewSummary(history);
+      // Download previous reviews and build history
+      core.info('Checking for previous review history...');
+      const previousSnapshots = await downloadPreviousReviews(pr.number);
+      
+      // Only include current snapshot in history if upload was successful
+      const allSnapshots = uploadSuccessful 
+        ? [...previousSnapshots, reviewSnapshot]
+        : previousSnapshots;
+      
+      if (!uploadSuccessful) {
+        core.warning('Review snapshot upload failed - history may be incomplete');
       }
+      
+      if (allSnapshots.length > 0) {
+        const history = buildReviewHistory(allSnapshots);
+        if (history) {
+          core.info(`Building review history with ${allSnapshots.length} snapshots...`);
+          await saveReviewSummary(history);
+        }
+      }
+
+      core.info('✅ Review history tracking completed');
+    } catch (historyError) {
+      // Log the error but don't fail the action
+      core.warning(
+        `Review history tracking failed but review was posted successfully: ${
+          historyError instanceof Error ? historyError.message : String(historyError)
+        }`
+      );
     }
 
     core.info('🎉 Enhanced review completed successfully');
